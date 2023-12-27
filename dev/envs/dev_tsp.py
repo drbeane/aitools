@@ -10,8 +10,6 @@ class TSP:
 
         # If this instance is a copy, then skip the steps below. 
         if is_copy: return
-        # Lines above executed for all nodes, copy or otherwise
-        # Lines below are executed only for new nodes
           
         # Generate site locations
         if random_state is not None:
@@ -28,10 +26,8 @@ class TSP:
         
         # Record path information
         self.unvisited = set(range(1,num_sites))
-        self.path = []
+        self.path = [0]
         self.cost = 0
-        self.site = 0
-        self.parent = None
         
         # Restore the NumPy state, if changed
         if random_state is not None:
@@ -55,12 +51,8 @@ class TSP:
         new_node.distances = self.distances     # This is reference, not a copy
         
         new_node.unvisited = {*self.unvisited}  # Copy unvisited set
-        new_node.path = []                      # Copy path list
+        new_node.path = [*self.path]            # Copy path list
         new_node.cost = self.cost               # Set cost
-        
-        new_node.site = self.site
-        new_node.parent = self.parent
-        
         return new_node
     
     
@@ -77,9 +69,8 @@ class TSP:
             for i in range(self.num_sites):
                 plt.text(self.sites[i,0]+1.5, self.sites[i,1]+3, s=i)
         
-        path = self.get_path()
         if show_path:
-            pts = self.sites[path, :]
+            pts = self.sites[self.path, :]
             plt.plot(pts[:, 0], pts[:,1], linewidth=1, c='darkgrey')
    
         plt.scatter(self.sites[1:,0], self.sites[1:,1], zorder=10)
@@ -102,24 +93,11 @@ class TSP:
         return len(self.unvisited) == 0
     
     
-    def get_path(self):
-        import gc
-        
-        if len(self.path) > 0:
-            return self.path
-        node = self
-        while node is not None:
-            self.path.insert(0, node.site)
-            node = node.parent
-        gc.collect()
-        return self.path
-    
-    
     def soln_info(self):
         '''
         Used to report path and cost in search output. 
         '''
-        msg = f'Solution Path: {self.get_path()}\n'
+        msg = f'Solution Path: {self.path}\n'
         msg = f'Solution Cost: {self.path_cost()}'
         return(msg)
     
@@ -138,34 +116,23 @@ class TSP:
         return self.unvisited
     
     
-    def take_action(self, site, close=False):
+    def take_action(self, site):
         '''
         Add requested site to path.
         If adding last unvisited site, path will close. 
         '''
         new_node = self.copy()
+        current = new_node.path[-1]
         new_node.unvisited.remove(site)
-        new_node.site = site
-        new_node.parent = self
-        
-        old_site = self.site
-        d = self.distances[old_site, site]
-        new_node.cost = round(self.cost + d, 1)
+        new_node.path.append(site)
+        d = self.distances[current, site]
+        new_node.cost = round(new_node.cost + d, 1)
         
         # Check if there are still unvisited sites. If not, close path.
         if len(new_node.unvisited) == 0:
-            final_node = new_node.copy()
-            final_node.site = 0
-            final_node.parent = new_node
+            new_node.path.append(0) 
             d = self.distances[site, 0]
-            final_node.cost = round(new_node.cost + d, 1)
-            
-            
-            #final_node = new_node.take_action(0, close=True)
-            #new_node.path.append(0) 
-            #d = self.distances[site, 0]
-            #final_node.cost = round(new_node.cost + d, 1)
-            return final_node
+            new_node.cost = round(new_node.cost + d, 1)
             
         return new_node
 

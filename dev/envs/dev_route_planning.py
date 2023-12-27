@@ -10,10 +10,8 @@ class RoutePlanning:
         
         # If this instance is being created as a copy, skip remaining steps
         if is_copy: return
-        # Lines above executed for all nodes, copy or otherwise
-        # Lines below are executed only for new nodes
         
-        self.state = 0 if start is None else start 
+        self.start = 0 if start is None else start 
         self.goal = num_sites-1 if goal is None else goal
         
         if random_state is not None:
@@ -58,11 +56,8 @@ class RoutePlanning:
             if self.check_solvable():
                 break
 
-        # History
-        self.path = []
-        self.distance = 0
-        self.parent = None
-        
+        # Store the path
+        self.path = [self.start]
         
         # Restore NumPy random state
         if random_state is not None:
@@ -70,8 +65,8 @@ class RoutePlanning:
 
 
     def check_solvable(self):
-        component = {self.state}
-        new_sites = self.nhbrs[self.state]
+        component = {self.start}
+        new_sites = self.nhbrs[self.start]
 
         while True:
             if len(new_sites - component) == 0:
@@ -93,37 +88,27 @@ class RoutePlanning:
         Return a copy of this instance. 
         '''
         new_node = RoutePlanning(self.num_sites, 2, is_copy=True)
+        new_node.start = self.start
         new_node.goal = self.goal
         new_node.sites = self.sites           # This is reference, not a copy. 
         new_node.simplices = self.simplices
         new_node.nhbrs = self.nhbrs
-        new_node.path = []
-        new_node.parent = self.parent
-        new_node.state = self.state
-        new_node.distance = self.distance
-        
+        new_node.path = [*self.path]
         return new_node 
     
     
     def check_solved(self):
-        return self.state == self.goal
+        return self.path[-1] == self.goal
     
     
     def get_actions(self):
-        site = self.state
+        site = self.path[-1]
         return list(self.nhbrs[site])
     
     
     def take_action(self, a):
         new_node = self.copy()
-        new_node.state = a
-        new_node.parent = self
-        
-        s1 = self.sites[self.state]
-        s2 = self.sites[new_node.state]
-        new_node.distance += np.sum((s1 - s2)**2)**0.5
-        
-        #new_node.path.append(a)
+        new_node.path.append(a)
         return new_node
 
 
@@ -143,18 +128,6 @@ class RoutePlanning:
             
         return new_node
     
-    def get_path(self):
-        import gc
-        
-        if len(self.path) > 0:
-            return self.path
-        node = self
-        while node is not None:
-            self.path.insert(0, node.state)
-            node = node.parent
-        gc.collect()
-        return self.path
-    
     
     def display(self, show_path=True, show_plot=True, figsize=[6,6], ps=100, window=None,
                 labels=False, label_info={'offset':0, 'size':8}, border=False):
@@ -167,12 +140,11 @@ class RoutePlanning:
         
         plt.triplot(self.sites[:,0], self.sites[:,1], self.simplices, c='#aaaaaa', linewidth=0.5)
         
-        path = self.get_path()
-        if show_path:   
-            pts = self.sites[path, :]
+        if show_path:
+            pts = self.sites[self.path, :]
             plt.plot(pts[:, 0], pts[:,1], zorder=1)
         
-        start_x, start_y = self.sites[path[0],:]
+        start_x, start_y = self.sites[self.start,:]
         goal_x, goal_y = self.sites[self.goal,:]
         plt.scatter(start_x, start_y, c='green', s=ps, edgecolor='k', zorder=2)
         plt.scatter(goal_x, goal_y, c='red', s=ps, edgecolor='k', zorder=2)
@@ -208,17 +180,15 @@ class RoutePlanning:
         
         
     def soln_info(self):
-        path = self.get_path()
         return f'Path Length: {len(self.path)-1}, Path Cost: {self.path_cost()}'
         
         
     def get_state_id(self):
-        return self.state
-        #return self.path[-1]
+        return self.path[-1]
     
     
     def path_cost(self):
-        return round(self.distance, 2)
+        
         distance = 0
         for i, j in zip(self.path[:-1], self.path[1:]):
             a = self.sites[i]
@@ -228,7 +198,7 @@ class RoutePlanning:
             
        
     def heuristic(self, **kwargs):
-        c = self.sites[self.state]
+        c = self.sites[self.path[-1]]
         g = self.sites[self.goal]
         d = np.sum((c-g)**2)**0.5
         return d.round(2)

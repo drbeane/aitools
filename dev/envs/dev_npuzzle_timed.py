@@ -4,7 +4,8 @@ from time import sleep
 
 class NPuzzle:
     
-    def __init__(self, rows, cols, scramble=1000, random_state=None, is_copy=False):
+    def __init__(self, rows, cols, scramble=1000, random_state=None, 
+                 is_copy=False, timer=None):
         ''' 
         Arguments:
             rows, cols -- dimensions of the board
@@ -14,7 +15,9 @@ class NPuzzle:
         self.rows = rows
         self.cols = cols
         self.N = rows * cols
+        self.timer = timer
         self.action_taken = None
+        
         
         if is_copy: return
         # Lines above executed for all nodes, copy or otherwise
@@ -27,6 +30,7 @@ class NPuzzle:
         self.path = []
         self.action_count = 0
         self.parent = None
+        
         
         # Configure Board
         self.board = np.arange(1,self.N+1).reshape(rows, cols)
@@ -45,19 +49,49 @@ class NPuzzle:
         '''
         Returns a copy of this instance. 
         '''
+        self.timer.start('COPY')
+        self.timer.start('COPY (New)')
         new_node = NPuzzle(self.rows, self.cols, is_copy=True)
+        self.timer.stop('COPY (New)')
+        self.timer.start('COPY (Board)')
         new_node.board = np.array(self.board)
+        self.timer.stop('COPY (Board)')
+        self.timer.start('COPY (solved_state)')
         new_node.solved_state = self.solved_state
+        self.timer.stop('COPY (solved_state)')
+        self.timer.start('COPY (blank)')
         new_node.blank = self.blank
+        self.timer.stop('COPY (blank)')
+        self.timer.start('COPY (path)')
         new_node.path = [*self.path]
+        self.timer.stop('COPY (path)')
+        self.timer.start('COPY (manhattan)')
         new_node.manhattan = self.manhattan
+        self.timer.stop('COPY (manhattan)')
+        self.timer.start('COPY (conflicts)')
         new_node.conflicts = self.conflicts
+        self.timer.stop('COPY (conflicts)')
+        self.timer.start('COPY (timer)')
+        new_node.timer = self.timer
+        self.timer.stop('COPY (timer)')
+        self.timer.stop('COPY')
+        
         new_node.parent = self.parent
         new_node.action_count = self.action_count
         new_node.action_taken = self.action_taken
         
         return new_node
     
+    
+    def get_mem_req(self):
+        import sys
+        attributes = [
+            self.rows, self.cols, self.N, self.manhattan, self.conflicts,
+            self.path, self.action_count, self.parent, self.board,
+            self.solved_state, self.blank, self.action_taken
+        ]
+        mem = sum([sys.getsizeof(a) for a in attributes])
+        return mem
     
     def get_actions(self):
         '''
@@ -76,10 +110,11 @@ class NPuzzle:
     
     
     def take_action(self, a):
+        self.timer.start('TAKE ACTION')
         '''
         Applies the selected action, if valid. Assumes that the action is valid. 
         '''
-                # Actions to Directions: 0-up, 2-down, 1-right, 3-left
+        # Actions to Directions: 0-up, 2-down, 1-right, 3-left
         # These indicate the direction the blank cell will be moved. 
         # Get location of blank cell and location of target cell
         blank_row, blank_col = self.blank
@@ -88,9 +123,12 @@ class NPuzzle:
         if a == 3: target_row, target_col  = (blank_row, blank_col - 1)
         if a == 1: target_row, target_col  = (blank_row, blank_col + 1)
         
+        
         # Get target value. 
+        self.timer.start('TAKE ACTION (Get Target Value)')
         target_val = self.board[target_row, target_col]
         new_node = self.copy()
+        self.timer.stop('TAKE ACTION (Get Target Value)')
         
         new_node.board[target_row, target_col] = 0
         new_node.board[blank_row, blank_col] = target_val
@@ -98,12 +136,15 @@ class NPuzzle:
 
         # Update Manhattan Heuristic
         # We need to look at metric for old and new positions for tile being moved.
+        self.timer.start('TAKE ACTION (Update Manhattan)')
         correct_row, correct_col = (target_val - 1)//self.cols, (target_val - 1)%self.cols
         old_diff = abs(correct_row - target_row) + abs(correct_col - target_col) 
         new_diff = abs(correct_row - blank_row) + abs(correct_col - blank_col)
         new_node.manhattan = new_node.manhattan - old_diff + new_diff
+        self.timer.stop('TAKE ACTION (Update Manhattan)')
         
         # Update Linear Conflicts: [Case 1] Tile moving up or down
+        self.timer.start('TAKE ACTION (Update Linear Conflicts)')
         if a in {0,2}:
             if target_row == correct_row:    # Target is leaving correct row
                 # This could reduce conflicts. Count conflicts existing BEFORE move.
@@ -120,12 +161,16 @@ class NPuzzle:
             if blank_col == correct_col:      # Target is entering correct column
                 # This could increase conflicts. Count conflicts existing AFTER move.
                 new_node.conflicts += new_node.count_col_conflicts(target_row, blank_col)
+        self.timer.stop('TAKE ACTION (Update Linear Conflicts)')
         
         # Record the action 
+        #new_node.path.append(a)
         new_node.parent = self
         new_node.action_count = new_node.action_count + 1
         self.action_taken = a
-            
+        
+        
+        self.timer.stop('TAKE ACTION')
         return new_node
 
 
@@ -241,7 +286,7 @@ class NPuzzle:
             node = node.parent
         gc.collect()
         return self.path
-    
+        
     
     def soln_info(self):
         path = self.get_path()
@@ -268,10 +313,6 @@ class NPuzzle:
 
 
     def get_state_id(self):
-        '''
-        Returns identifier for current state. 
-        State id is a string recording board state.
-        '''
         return str(self.board.tolist())
     
     

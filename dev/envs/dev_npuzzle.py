@@ -241,12 +241,13 @@ class NPuzzle:
             node = node.parent
         gc.collect()
         return self.path
-    
+                    
     
     def soln_info(self):
         path = self.get_path()
         msg = f'Solution Length: {len(path)}'
         return msg 
+
 
     def animate_solution(self, path, delay=1):
         print('Initial State')
@@ -268,10 +269,6 @@ class NPuzzle:
 
 
     def get_state_id(self):
-        '''
-        Returns identifier for current state. 
-        State id is a string recording board state.
-        '''
         return str(self.board.tolist())
     
     
