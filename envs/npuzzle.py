@@ -27,6 +27,7 @@ class NPuzzle:
         self.path = []
         self.action_count = 0
         self.parent = None
+        self.root = self
         
         # Configure Board
         self.board = np.arange(1,self.N+1).reshape(rows, cols)
@@ -55,6 +56,7 @@ class NPuzzle:
         new_node.parent = self.parent
         new_node.action_count = self.action_count
         new_node.action_taken = self.action_taken
+        new_node.root = self.root
         
         return new_node
     
@@ -79,7 +81,7 @@ class NPuzzle:
         '''
         Applies the selected action, if valid. Assumes that the action is valid. 
         '''
-                # Actions to Directions: 0-up, 2-down, 1-right, 3-left
+        # Actions to Directions: 0-up, 2-down, 1-right, 3-left
         # These indicate the direction the blank cell will be moved. 
         # Get location of blank cell and location of target cell
         blank_row, blank_col = self.blank
@@ -124,7 +126,7 @@ class NPuzzle:
         # Record the action 
         new_node.parent = self
         new_node.action_count = new_node.action_count + 1
-        self.action_taken = a
+        new_node.action_taken = a
             
         return new_node
 
@@ -235,8 +237,10 @@ class NPuzzle:
         
         if len(self.path) > 0:
             return self.path
-        node = self.parent
-        while node is not None:
+        
+        node = self
+        
+        while node.parent is not None:
             self.path.insert(0, node.action_taken)
             node = node.parent
         gc.collect()
@@ -244,20 +248,20 @@ class NPuzzle:
     
     
     def soln_info(self):
-        path = self.get_path()
-        msg = f'Solution Length: {len(path)}'
+        msg = f'Solution Length: {self.action_count}'
         return msg 
 
-    def animate_solution(self, path, delay=1):
+    def animate_solution(self, path=None, delay=1):
+        path = self.get_path()
         print('Initial State')
-        self.display()
-        temp = self.copy()
+        node = self.root.copy()
+        node.display()
         for a in path:
             sleep(delay)
             clear_output(wait=True)
-            temp = temp.take_action(a)
+            node = node.take_action(a)
             print(f'Action {a} was taken.')
-            temp.display()    
+            node.display()    
         
 
     def check_solved(self):
@@ -276,8 +280,7 @@ class NPuzzle:
     
     
     def path_cost(self):
-        path = self.get_path()
-        return len(path)
+        return self.action_count
     
     
     def heuristic(self, **kwargs):

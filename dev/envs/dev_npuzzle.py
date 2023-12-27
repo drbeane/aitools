@@ -249,7 +249,8 @@ class NPuzzle:
         return msg 
 
 
-    def animate_solution(self, path, delay=1):
+    def animate_solution(self, path=None, delay=1):
+        path = self.get_path()
         print('Initial State')
         self.display()
         temp = self.copy()
