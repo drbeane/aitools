@@ -77,7 +77,8 @@ def general_search(root, alg, time_limit=120, display_results=True, update_rate=
                 print(cur_node.soln_info())
                 print()
             
-           
+            # Build path attribute
+            _ = cur_node.get_path()
             return cur_node, log
         
         # If current node is not a solution, then expand it by looping over all available actions. 
