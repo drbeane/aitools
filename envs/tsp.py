@@ -29,7 +29,8 @@ class TSP:
         # Record path information
         self.unvisited = set(range(1,num_sites))
         self.path = []
-        self.cost = 0
+        self.inc_dist = 0
+        self.tot_dist = 0
         self.site = 0
         self.parent = None
         
@@ -56,7 +57,8 @@ class TSP:
         
         new_node.unvisited = {*self.unvisited}  # Copy unvisited set
         new_node.path = []                      # Copy path list
-        new_node.cost = self.cost               # Set cost
+        new_node.inc_dist = self.inc_dist       # Incremental Distance
+        new_node.tot_dist = self.tot_dist       # Total Distance
         
         new_node.site = self.site
         new_node.parent = self.parent
@@ -150,7 +152,8 @@ class TSP:
         
         old_site = self.site
         d = self.distances[old_site, site]
-        new_node.cost = round(self.cost + d, 1)
+        new_node.tot_dist = round(self.tot_dist + d, 1)
+        new_node.inc_dist = d
         
         # Check if there are still unvisited sites. If not, close path.
         if len(new_node.unvisited) == 0:
@@ -158,7 +161,8 @@ class TSP:
             final_node.site = 0
             final_node.parent = new_node
             d = self.distances[site, 0]
-            final_node.cost = round(new_node.cost + d, 1)
+            final_node.tot_dist = round(new_node.tot_dist + d, 1)
+            final_node.inc_dist = d
             
             
             #final_node = new_node.take_action(0, close=True)
@@ -196,7 +200,7 @@ class TSP:
         '''
         Returns the path cost. 
         '''
-        return self.cost
+        return self.tot_dist
     
     
     def heuristic(self, alg):
@@ -219,7 +223,8 @@ class TSP:
 
         # Selected rows will define potential source sites
         # Selected cols will define potential target sites
-        sel_rows = list(self.unvisited) + [self.path[-1]]
+        #sel_rows = list(self.unvisited) + [self.path[-1]]
+        sel_rows = list(self.unvisited) + [self.site]
         sel_cols = list(self.unvisited) + [0]
         
         # Select relevant distances. Replace 0 distances with inf
@@ -239,13 +244,15 @@ class TSP:
         Heuristic used for greedy algorithm. 
         '''
         # Calculate distance travelled in previous step. 
-        a = self.path[-2]
-        b = self.path[-1]
-        d = self.distances[a, b]
+        #a = self.path[-2]
+        #b = self.path[-1]
+        #d = self.distances[a, b]
+        d = self.inc_dist
         
         # Selected rows will define potential source sites
         # Selected cols will define potential target sites
-        sel_rows = list(self.unvisited) + [self.path[-1]]
+        #sel_rows = list(self.unvisited) + [self.path[-1]]
+        sel_rows = list(self.unvisited) + [self.site]
         sel_cols = list(self.unvisited) + [0]
         
         # Select relevant distances.
