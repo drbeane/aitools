@@ -1,7 +1,3 @@
-import numpy as np
-from IPython.display import clear_output
-from time import sleep
-
 class NPuzzle:
     
     def __init__(self, rows, cols, scramble=1000, random_state=None, is_copy=False):
@@ -11,6 +7,8 @@ class NPuzzle:
             mode -- heuristic for greedy and a-star algs
                     "manhattan",                 
         '''
+        import numpy as np
+        
         self.rows = rows
         self.cols = cols
         self.N = rows * cols
@@ -46,6 +44,8 @@ class NPuzzle:
         '''
         Returns a copy of this instance. 
         '''
+        import numpy as np
+        
         new_node = NPuzzle(self.rows, self.cols, is_copy=True)
         new_node.board = np.array(self.board)
         new_node.solved_state = self.solved_state
@@ -199,6 +199,8 @@ class NPuzzle:
         '''
         Scrambles the puzzle. 
         '''
+        import numpy as np
+        
         if random_state is not None:
             np_state = np.random.get_state()
             np.random.seed(random_state)
@@ -252,6 +254,9 @@ class NPuzzle:
         return msg 
 
     def animate_solution(self, path=None, delay=1):
+        from IPython.display import clear_output
+        from time import sleep
+        
         path = self.get_path()
         print('Initial State')
         node = self.root.copy()
@@ -268,6 +273,8 @@ class NPuzzle:
         '''
         Checks if the puzzle has been solved. 
         '''
+        import numpy as np
+        
         return np.all(self.board == self.solved_state)
 
 
@@ -286,6 +293,67 @@ class NPuzzle:
     def heuristic(self, **kwargs):
         return self.manhattan + 2 * self.conflicts
     
+
+    def generate_image(self, show=False):
+        import cv2
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        rows, cols = self.rows, self.cols
+        box_size = 64
+        image = np.zeros((rows*box_size, cols*box_size, 3))#.astype(int)
+
+        for r in range(rows):
+            for c in range(cols):
+                y0, x0, y1, x1 = r*box_size, c*box_size, (r+1)*box_size, (c+1)*box_size
+                v = self.board[r,c]
+                if v == 0:
+                    image = cv2.rectangle(image, (x0, y0), (x1, y1), color=(1, 1, 1), thickness=-1) 
+                else:
+                    image = cv2.rectangle(image, (x0, y0), (x1, y1), color=(32,32,32), thickness=-1) 
+                    image = cv2.putText(image, str(v), (x0 + box_size//4, y0 + 48), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255,255,255), 3) 
+
+                image = cv2.rectangle(image, (x0+1, y0+1), (x1-2, y1-2), color=(255, 255, 255), thickness=2) 
+    
+        image = (255 * image).astype(np.uint8)
+
+        if show:
+            plt.figure(figsize=(3,3))
+            plt.imshow(image, cmap='bone_r')
+            plt.grid()
+            plt.axis('off')
+            plt.show()
+
+        return image
+
+    def generate_gif(self, fps=1):
+        import imageio
+        import os
+        from IPython.display import Image, display
+
+        frames = [self.generate_image()] * 2 * fps
+
+        node = self
+        while node.parent is not None:
+            node = node.parent
+            f = node.generate_image()
+            frames.insert(0, f)
+
+        return frames
+        print('asdf')
+
+        for i in range(fps):
+            frames.insert(0, f)
+
+        print(len(frames))
+
+        os.makedirs('gifs', exist_ok=True)
+        imageio.mimsave(f'gifs/temp.gif', frames, format='GIF', duration=1000/fps, loop=0)   
+
+        with open(f'gifs/temp.gif','rb') as f:
+            display(Image(data=f.read(), format='png'))
+
+
 
 if __name__ == '__main__':
     

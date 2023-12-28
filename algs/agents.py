@@ -1,0 +1,502 @@
+################################################################
+# Notes: 1/12/2023
+# 1. MinMax agent has an unused "num_random_turns" parameter
+# 2. Consider adding a HumanPlayer agent. 
+################################################################
+
+import numpy as np
+import time as time
+from tqdm.notebook import tqdm
+
+
+def play_game(root, agents, display_flags='', max_turns=None, 
+              return_times=False, random_state=None):
+    '''
+    Plays a single game with 2 agents selecting actions. 
+    
+    root - Root node for game environment.
+    agents - List of 2 agents, one for each player.
+    
+    Display flags: 
+        a - Show each action taken.
+        s - Show game state after each action. 
+        w - State the winner of the game.
+        t - Report time taken by each player.
+    '''
+    
+    # Set the random seed, if one is specified. 
+    if random_state is not None:
+        np_state = np.random.get_state()
+        np.random.seed(random_state)
+    
+    agents_dict = {1:agents[0], 2:agents[1]}   # Maps player number to agent. 
+    play_time = {1:0, 2:0}                     # Tracks play time for each agent. 
+    
+    game_state = root.copy()                   # Create a copy of the game env
+    
+    while game_state.winner is None:           # Loop until there is a winner (or a tie)
+        
+        cp = game_state.cur_player             # Determine current player
+        agent = agents_dict[cp]                # Lookup agent for current player
+        
+        t0 = time.time()                    
+        a = agent.select_action(game_state)    # Agent selects an action. 
+        play_time[cp] += time.time() - t0 
+        
+        game_state = game_state.take_action(a) # Apply the selected action. 
+        
+        # Report the action taken, if requested. 
+        if 'a' in display_flags:
+            print(f'Turn {game_state.turns}: Player {cp} takes Action {a}')
+        
+        # Display new game state, if requested. 
+        if 's' in display_flags:
+            game_state.display()
+        
+        # Display the winnder, if needed. 
+        if ('w' in display_flags) and (game_state.winner is not None):
+            #if game_state.winner is None:
+            #    pass
+            if game_state.winner > 0:
+                winner_name = agents_dict[game_state.winner].name
+                print(f'{winner_name} wins!')
+            elif game_state.winner == 0:
+                print('\nThere is a tie!')
+        
+
+        # End the loop if the number of turns has reach the maximum. 
+        if game_state.turns == max_turns:
+            break
+    
+    # Display play time report, if requested.
+    if 't' in display_flags:
+        for i in [1,2]:
+            print(f'Player {i} took {play_time[i]:.4f} seconds.')
+    
+    # Reset the numpy random state
+    if random_state is not None:
+        np.random.set_state(np_state)
+    
+    # The tournament function below needs access to play_time list. 
+    if return_times:
+        return game_state, play_time
+    else:
+        return game_state
+        
+
+def tournament(root, agents, rounds, switch_players=True, reroll=False, random_state=None,
+               display_results=True, return_results=False, show_progress=True):
+    '''
+    Runs a tournament between two agents. 
+    
+    root - Root node for game environment.
+    agents - List of 2 agents, one for each player.
+    rounds - Number of games to play. 
+    switch_players - Agents will alternate 1st player if True. 
+    reroll - Allows game envs with stochastic setups to be rerolled after each game. 
+    display_results - Print a report of the tournament results. 
+    return_results - 
+    random_state - Random seed used for tournament. 
+    show_progress - Determines if a progress bar should be displayed.
+    '''
+    
+    # Set the random seed, if one is specified. 
+    if random_state is not None:
+        np_state = np.random.get_state()
+        np.random.seed(random_state)
+    
+    win_counts = [0, 0, 0]          # Tie, Agent 1, Agent 2
+    total_play_time = {1:0, 2:0}    # Records total play time for each player. 
+    turn_count = 0                  # Total number of turns taken. Used to report avg turns. 
+    
+    # Determine if a progress bar should be displayed. 
+    rng = range(rounds)
+    if display_results and show_progress: 
+        rng = tqdm(range(rounds))
+            
+    # Iterate over rng, playing one game for each iteration. 
+    for i in rng:
+        
+        # If players are alternating, we need to update the player-to-agent map
+        # Note that this list is also used below to update the win counts. 
+        player_to_agent = [0, 1, 2]
+        if switch_players:
+            player_to_agent = [0, 1 + i%2, 2 - i%2]
+        
+        # Assign agents to players for current game. 
+        p1 = agents[i % 2]
+        p2 = agents[1 - i%2]
+        
+        # We need to reset the game to an initial state. 
+        # For games with a stochastic setup, we should reroll the initial state. 
+        if reroll:
+            init_state = root.reroll()
+        else:
+            init_state = root.copy()
+        
+        # Play the game.
+        final_state, play_time = play_game(init_state, [p1, p2], return_times=True)
+
+        # Update win counts for each agent. We need to map player to agent. 
+        win_counts[player_to_agent[final_state.winner]] += 1
+        
+        # Update turn count and play times. 
+        turn_count += final_state.turns    
+        for i in [1,2]:
+            a = player_to_agent[i]
+            total_play_time[a] += play_time[i]
+    
+    # Display the results of the tournament, if request. 
+    if display_results:
+        title = f'{agents[0].name} vs. {agents[1].name}'
+        print(title)
+        print('-' * len(title))
+        print(f'Ties:          {win_counts[0]}')
+        print(f'Player 1 Wins: {win_counts[1]}')
+        print(f'Player 2 Wins: {win_counts[2]}')
+        print(f'Player 1 took: {total_play_time[1]:.2f} seconds')
+        print(f'Player 2 took: {total_play_time[2]:.2f} seconds')
+        print(f'Average number of turns: {turn_count/rounds:.1f}')
+
+    # Reset the numpy random state
+    if random_state is not None:
+        np.random.set_state(np_state)
+
+    # Return the results, if requested. 
+    # This is used only for HW 3, Part 4. 
+    if return_results:
+        return {
+            'win_counts':win_counts, 
+            'play_time':total_play_time, 
+            'avg_turns':round(turn_count/rounds,1)
+        }
+        
+   
+class RandomPlayer:
+    '''
+    Implements a Random Player agent. 
+    Agent selects actions at random from those available. 
+    '''
+    def __init__(self, name):
+        self.name = name
+        
+    def select_action(self, state):
+        actions = state.get_actions()       
+        i = np.random.choice(len(actions))
+        return actions[i]        
+
+
+class GreedyPlayer:
+    '''
+    Implements a Greedy Player agent. 
+    Agent selects actions greedily according to some heuristic. 
+    '''
+
+    def __init__(self, name):
+        self.name = name
+    
+    def select_action(self, state):
+        # Get available actions. 
+        actions = state.get_actions()
+        actions = np.array(actions)
+        
+        # Get new states
+        states = [state.take_action(a) for a in actions]
+        
+        # Score each state. 
+        cp = state.cur_player
+        scores = [s.heuristic(agent=cp) for s in states]
+        scores = np.array(scores)
+        
+        # Find states with best scores
+        max_score = scores.max()
+        sel = (scores == max_score)
+        best_actions = actions[sel]
+        
+        i = np.random.choice(len(best_actions))
+        return best_actions[i]              
+    
+    
+class MinimaxPlayer:
+    
+    def __init__(self, name, depth, random_turns=0):
+        self.name = name
+        self.depth = depth    
+        self.num_rand = random_turns
+    
+    def select_action(self, state):
+        # Record the player number for agent making the move. 
+        self.agent = state.cur_player
+        
+        best_score = float('-inf')
+        best_actions = []
+        
+        # Loop over all possible actions/children
+        for a in state.get_actions():
+            
+            # Evaluate child, which is in a Min layer. 
+            child_state = state.take_action(a)
+            v = self.min_valuation(child_state, self.depth - 1)
+            
+            # Check to see if child score is better than current best
+            if v == best_score:
+                best_actions.append(a)
+            if v > best_score: 
+                best_score = v   
+                best_actions = [a]
+
+        i = np.random.choice(len(best_actions))
+        return best_actions[i]              
+
+        
+    def min_valuation(self, state, depth):
+        # The current player for states in a min layer is not the agent. 
+        # But the states are evaluated from the persective of the agent. 
+        
+        # Check to see if the current state is terminal. 
+        if state.winner is None:
+            pass
+        elif state.winner == 0:
+            return 0                        # Tied state
+        elif state.winner == self.agent:
+            return float('inf')             # Agent wins in this state
+        else:
+            return float('-inf')            # Agent loses in this state
+        # The else condition above should never be reached. 
+        # Since we are in a min layer, the agent would be the last player to
+        # have taken an action. That can't result in opponent win.  
+        
+        # If the state is not terminal, we continue with valuation. 
+        
+        # If depth == 0, then state is scored according to the heuristic. 
+        if depth == 0:
+            # Note that agent will always be different from cur_player in this fn call
+            return state.heuristic(agent=self.agent)
+         
+        # If depth > 0, then state is evaluated as min of child states. 
+        # Child states will be in a max layer. 
+        
+        min_v = float('inf')
+        for a in state.get_actions():
+            # Evaluate child, which is in a Max layer. 
+            child_state = state.take_action(a)
+            v = self.max_valuation(child_state, depth - 1)
+            min_v = min(v, min_v)
+            
+        return min_v
+        
+    def max_valuation(self, state, depth):
+        # The current player for states in a max layer is the agent. 
+        # States are evaluated from the persective of the agent. 
+        
+        # Check to see if the current state is terminal. 
+        if state.winner is None:
+            pass
+        elif state.winner == 0:
+            return 0                        # Tied state
+        elif state.winner == self.agent:
+            return float('inf')             # Agent wins in this state
+        else:
+            return float('-inf')            # Agent loses in this state
+        # The 2nd to last condition above should never be reached. 
+        # Since we are in a max layer, oppo would be the last player to
+        # have taken an action. That can't result in agent win.  
+        
+        # If the state is not terminal, we continue with valuation. 
+        
+        # If depth == 0, then state is scored according to the heuristic. 
+        if depth == 0:
+            # Note that agent will always be cur_player in this fn call
+            return state.heuristic(agent=self.agent)
+         
+        # If depth > 0, then state is evaluated as max of child states. 
+        # Child states will be in a min layer. 
+        max_v = float('-inf')
+        for a in state.get_actions():
+            # Evaluate child, which is in a Min layer. 
+            child_state = state.take_action(a)
+            v = self.min_valuation(child_state, depth - 1)
+            max_v = max(v, max_v)
+            
+        return max_v
+    
+             
+class MinimaxPlayerABP:
+    
+    def __init__(self, name, depth, random_turns=0):
+        self.name = name
+        self.depth = depth    
+        self.num_rand = random_turns
+        
+    def select_action(self, state):
+        # Obtain the player number for agent making the move. 
+        self.agent = state.cur_player
+
+        alpha = float('-inf')
+        beta = float('inf')
+        best_score = float('-inf')
+        best_actions = []
+        
+        # Loop over all available actions/children.
+        for a in state.get_actions():
+            
+            # Evaluate child, which is in a Min layer. 
+            child_state = state.take_action(a)
+            v = self.min_valuation(child_state, alpha, beta, self.depth - 1)
+            
+            # Update alpha
+            alpha = max(alpha, v)
+            
+            # Check to see if child score is better than current best
+            if v == best_score:
+                best_actions.append(a)
+            if v > best_score: 
+                best_score = v   
+                best_actions = [a]
+        
+        i = np.random.choice(len(best_actions))
+        return best_actions[i]
+
+    def min_valuation(self, state, alpha, beta, depth):
+        # The current player for states in a min layer is not the agent. 
+        # But the states are evaluated from the persective of the agent. 
+        
+        # Check to see if the current state is terminal. 
+        if state.winner is None:
+            pass
+        elif state.winner == 0:
+            return 0                        # Tied state
+        elif state.winner == self.agent:
+            return float('inf')             # Agent wins in this state
+        else:
+            return float('-inf')            # Agent loses in this state
+        # The else condition above should never be reached. 
+        # Since we are in a min layer, the agent would be the last player to
+        # have taken an action. That can't result in opponent win.  
+        
+        # If the state is not terminal, we continue with valuation. 
+        
+        # If depth == 0, then state is scored according to the heuristic. 
+        if depth == 0:
+            # Note that agent will always be different from cur_player in this fn call
+            return state.heuristic(agent=self.agent)
+         
+        # If depth > 0, then state is evaluated as min of child states. 
+        # Child states will be in a max layer.
+         
+        min_v = float('inf')
+        for a in state.get_actions():
+            # Evaluate child, which is in a Max layer. 
+            child_state = state.take_action(a)
+            v = self.max_valuation(child_state, alpha, beta, depth - 1)
+            min_v = min(v, min_v)
+            
+            if min_v < alpha:
+                return min_v
+            
+            beta = min(beta, min_v)
+            
+        return min_v
+
+    def max_valuation(self, state, alpha, beta, depth):
+        # The current player for states in a max layer is the agent. 
+        # States are evaluated from the persective of the agent. 
+        
+        # Check to see if the current state is terminal. 
+        if state.winner is None:
+            pass
+        elif state.winner == 0:
+            return 0                        # Tied state
+        elif state.winner == self.agent:
+            return float('inf')             # Agent wins in this state
+        else:
+            return float('-inf')            # Agent loses in this state
+        # The 2nd to last condition above should never be reached. 
+        # Since we are in a max layer, oppo would be the last player to
+        # have taken an action. That can't result in agent win.  
+        
+        # If the state is not terminal, we continue with valuation. 
+        
+        # If depth == 0, then state is scored according to the heuristic. 
+        if depth == 0:
+            # Note that agent will always be cur_player in this fn call
+            return state.heuristic(agent=self.agent)
+         
+        # If depth > 0, then state is evaluated as max of child states. 
+        # Child states will be in a min layer.
+         
+        max_v = float('-inf')
+        for a in state.get_actions():
+            # Evaluate child, which is in a Min layer. 
+            child_state = state.take_action(a)
+            v = self.min_valuation(child_state, alpha, beta, depth - 1)
+            max_v = max(v, max_v)
+            
+            if max_v > beta:
+                return max_v
+            
+            alpha = max(alpha, max_v)
+            
+        return max_v
+
+
+class PolicyPlayer:
+    
+    def __init__(self, name, policy):
+        self.name = name
+        self.policy = policy.copy()
+        
+    def select_action(self, node):
+        actions = node.get_actions()
+        s = node.get_state()
+        a = self.policy.get(s, None)
+        if a not in actions:
+            i = np.random.choice(len(actions))
+            a = actions[i]
+        return a
+
+
+from IPython.display import clear_output
+class HumanPlayer:
+    
+    def __init__(self, name, clear=True, show_actions=False):
+        self.name = name
+        self.clear = clear
+        self.show_actions = show_actions
+        
+    def select_action(self, node):
+        
+        valid = False
+        while valid == False:
+            actions = node.get_actions()
+            
+            if self.show_actions:
+                print('The valid actions are:')
+                print(actions)
+                
+            a = input('Please select an action:')
+        
+            try:    
+                if type(actions[0]) == int:
+                    a = int(a)
+                elif type(actions[0]) == tuple:
+                    a = a.replace('(', '').replace(')', '')
+                    a = tuple(int(x) for x in a.split(","))
+            except:
+                print('Action entered was not in correct format.')    
+                continue
+        
+            if a not in actions:
+                print('Selected action is not valid.')
+                node.display()
+            else:
+                valid = True
+        
+        if self.clear:
+            #time.sleep(0.5)
+            clear_output()
+            time.sleep(0.25)
+            
+        return a
+    
+        
