@@ -339,8 +339,8 @@ class NPuzzle:
             f = node.generate_image()
             frames.insert(0, f)
 
-        return frames
-        print('asdf')
+        #return frames
+        
 
         for i in range(fps):
             frames.insert(0, f)
