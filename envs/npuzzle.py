@@ -341,11 +341,8 @@ class NPuzzle:
 
         #return frames
         
-
         for i in range(fps):
             frames.insert(0, f)
-
-        print(len(frames))
 
         os.makedirs('gifs', exist_ok=True)
         imageio.mimsave(f'gifs/temp.gif', frames, format='GIF', duration=1000/fps, loop=0)   
