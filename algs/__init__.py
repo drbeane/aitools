@@ -2,7 +2,7 @@
 # Init file for algorithms module
 #-------------------------------------
 
-print('loading algs')
+#print('loading algs')
 
 #-----------------------------------------------------------
 # Import statements below enable importing environments 

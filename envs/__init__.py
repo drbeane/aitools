@@ -10,3 +10,4 @@ from aitools.envs.route_planning import RoutePlanning
 from aitools.envs.npuzzle import NPuzzle
 from aitools.envs.tsp import TSP                        
 from aitools.envs.oware import Oware
+from aitools.envs.gridland import GridLand
