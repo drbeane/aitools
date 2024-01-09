@@ -15,6 +15,7 @@ class RoutePlanning:
         
         self.state = 0 if start is None else start 
         self.goal = num_sites-1 if goal is None else goal
+        self.start = start
         
         if random_state is not None:
             np_state = np.random.get_state()  # Store NumPy random state to restore later
@@ -100,6 +101,7 @@ class RoutePlanning:
         new_node.path = []
         new_node.parent = self.parent
         new_node.state = self.state
+        new_node.start = self.start
         new_node.distance = self.distance
         
         return new_node 
