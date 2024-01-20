@@ -15,7 +15,7 @@ class RoutePlanning:
         
         self.state = 0 if start is None else start 
         self.goal = num_sites-1 if goal is None else goal
-        self.start = start
+        self.start = self.state
         
         if random_state is not None:
             np_state = np.random.get_state()  # Store NumPy random state to restore later
@@ -125,7 +125,6 @@ class RoutePlanning:
         s2 = self.sites[new_node.state]
         new_node.distance += np.sum((s1 - s2)**2)**0.5
         
-        #new_node.path.append(a)
         return new_node
 
 
@@ -151,7 +150,7 @@ class RoutePlanning:
         if len(self.path) > 0:
             return self.path
         node = self
-        while node is not None:
+        while node.parent is not None:
             self.path.insert(0, node.state)
             node = node.parent
         gc.collect()
@@ -169,7 +168,9 @@ class RoutePlanning:
         
         plt.triplot(self.sites[:,0], self.sites[:,1], self.simplices, c='#aaaaaa', linewidth=0.5)
         
-        path = self.get_path()
+        path = self.get_path()      # Get list of actions 
+        path = [self.start] + path  # Extend to include starting site
+        
         if show_path:   
             pts = self.sites[path, :]
             plt.plot(pts[:, 0], pts[:,1], zorder=1)
@@ -216,18 +217,11 @@ class RoutePlanning:
         
     def get_state_id(self):
         return self.state
-        #return self.path[-1]
     
     
     def path_cost(self):
         return round(self.distance, 2)
-        distance = 0
-        for i, j in zip(self.path[:-1], self.path[1:]):
-            a = self.sites[i]
-            b = self.sites[j]
-            distance += np.sum((a-b)**2)**0.5
-        return distance.round(2)
-            
+           
        
     def heuristic(self, **kwargs):
         c = self.sites[self.state]
@@ -237,10 +231,13 @@ class RoutePlanning:
         
         
 if __name__ == '__main__':
-    
-    state = RoutePlanning(num_sites=500, random_state=1)
-    state = state.random_walk(steps=20, random_state=1)
+    import os
+    os.system('cls')
+    state = RoutePlanning(num_sites=500, start=137, random_state=1)
+    state = state.random_walk(steps=20, random_state=2)
     state.display(show_path=True)
+    path = state.get_path()
+    print(path)
     print(state.heuristic())
     
     
