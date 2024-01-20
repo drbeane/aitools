@@ -347,9 +347,11 @@ class NPuzzle:
             frames.insert(0, f)
 
         os.makedirs('gifs', exist_ok=True)
-        imageio.mimsave(f'gifs/temp.gif', frames, format='GIF', duration=1000/fps, loop=0)   
+        n = len(os.listdir('gifs/')) + 1
+        filename = f'gifs/soln_gif_{n}.gif'
+        imageio.mimsave(filename, frames, format='GIF', duration=1000/fps, loop=0)   
 
-        with open(f'gifs/temp.gif','rb') as f:
+        with open(filename,'rb') as f:
             display(Image(data=f.read(), format='png'))
 
 
