@@ -15,8 +15,10 @@ class NPuzzle:
         self.action_taken = None
         
         if is_copy: return
+        #-----------------------------------------------------------
         # Lines above executed for all nodes, copy or otherwise
         # Lines below are executed only for new nodes
+        #-----------------------------------------------------------
         
         self.manhattan = 0
         self.conflicts = 0

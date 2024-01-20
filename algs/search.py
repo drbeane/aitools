@@ -48,12 +48,6 @@ def general_search(root, alg, time_limit=120, display_results=True, update_rate=
             nodes_visited.add(cur_node_id)
         
         
-        #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        #print()
-        #print('Expanding node', cur_node.site)
-        #print('Unvisited sites:', cur_node.unvisited)
-        
-        
         # Increment the nodes_checked counter.
         log['nodes_checked'] += 1
         
@@ -62,7 +56,7 @@ def general_search(root, alg, time_limit=120, display_results=True, update_rate=
         log['frontier_size'].append(fs)
         
         # Check to see if current state is a goal state
-        # If it is, then return print results and the current node
+        # If it is, print search results, construct path, return current node and log
         if cur_node.check_solved():
             log['time'] = time.time() - t0
             

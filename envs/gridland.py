@@ -11,9 +11,13 @@ class GridLand:
         self.size = size
         self.hills = hills
         self.goal = (size-1, size-1)
+        self.action_taken = None
         
-        if is_copy:
-            return 
+        if is_copy: return 
+        #-----------------------------------------------------------
+        # Lines above executed for all nodes, copy or otherwise
+        # Lines below are executed only for new nodes
+        #-----------------------------------------------------------
         
         if random_state is not None:
             np_state = np.random.get_state()
@@ -25,9 +29,10 @@ class GridLand:
             np_state = np.random.get_state()
 
         self.state = (0,0)
-        self.history = []
-        self.path = [(0,0)]
+        self.path = []
         self.total_cost = self.board[0,0]
+        self.parent = None
+        self.root = self
     
         
     def gen_board(self):
@@ -62,19 +67,23 @@ class GridLand:
     
     
     def copy(self):
-        temp = GridLand(self.size, self.hills, is_copy=True)
-        temp.board = self.board
-        temp.state = self.state
-        temp.history = [*self.history]
-        temp.path = [*self.path]
-        temp.total_cost = self.total_cost
-        return temp
+        new_node = GridLand(self.size, self.hills, is_copy=True)
+        new_node.board = self.board
+        new_node.state = self.state
+        #new_node.history = [*self.history]
+        new_node.path = [*self.path]
+        new_node.total_cost = self.total_cost
+        new_node.parent = self.parent
+        new_node.root = self.root
+        new_node.action_taken = self.action_taken
+        return new_node
 
 
     def display(self, show_fig=True):
+        path = self.get_path()
         x = [0]
         y = [0]
-        for a in self.history:
+        for a in path:
             if a == 0: x.append(x[-1]); y.append(y[-1]-1)
             if a == 1: x.append(x[-1]+1); y.append(y[-1])
             if a == 2: x.append(x[-1]); y.append(y[-1]+1)
@@ -93,7 +102,8 @@ class GridLand:
 
 
     def soln_info(self):
-        msg = f'Solution Length: {len(self.path)}, Total Cost: {self.total_cost}'
+        path = self.get_path()
+        msg = f'Solution Length: {len(path)}, Total Cost: {self.total_cost}'
         return msg
         
 
@@ -128,12 +138,30 @@ class GridLand:
         dr, dc = [(-1,0), (0,1), (1,0), (0,-1)][a]
         new_node = self.copy()
         new_node.state = (self.state[0] + dr, self.state[1] + dc)
-        new_node.history.append(a)
-        new_node.path.append(new_node.state)
+        #new_node.history.append(a)
+        #new_node.path.append(new_node.state)
         cost = self.board[new_node.state]
         new_node.total_cost += cost
+        new_node.parent = self
+        new_node.action_taken = a
         return new_node
     
+    
+    def get_path(self):
+        import gc
+        
+        if len(self.path) > 0:
+            return self.path
+        
+        node = self
+        
+        while node.parent is not None:
+            self.path.insert(0, node.action_taken)
+            node = node.parent
+            
+        gc.collect()
+        return self.path
+        
     
     def path_cost(self):
         return self.total_cost
@@ -188,12 +216,17 @@ class GridLand:
 
 
 if __name__ == '__main__':
+    import os
+    os.system('cls')
+    print('------------------------------------------')
     
-    gw = GridLand(size=20, hills=12)
+    gw = GridLand(size=12, hills=12)
     print(gw.board)
     
     x = gw.random_walk(50)
-    print(x.history)
+    print(x.path)
+    print(x.get_path())
+    print(x.path)
     x.display()
     
         
