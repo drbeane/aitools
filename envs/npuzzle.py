@@ -313,7 +313,7 @@ class NPuzzle:
                     image = cv2.rectangle(image, (x0, y0), (x1, y1), color=(1, 1, 1), thickness=-1) 
                 else:
                     image = cv2.rectangle(image, (x0, y0), (x1, y1), color=(32,32,32), thickness=-1) 
-                    x_margin = 18 if v < 10 else 4
+                    x_margin = 18 if v < 10 else 2
                     y_margin = 48
                     image = cv2.putText(image, str(v), (x0 + x_margin, y0 + y_margin), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (255,255,255), 3) 
 
