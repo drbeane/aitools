@@ -145,7 +145,6 @@ class RoutePlanning:
         return new_node
     
     def get_path(self):
-        import gc
         
         if len(self.path) > 0:
             return self.path
@@ -153,7 +152,7 @@ class RoutePlanning:
         while node.parent is not None:
             self.path.insert(0, node.state)
             node = node.parent
-        gc.collect()
+        
         return self.path
     
     
@@ -212,7 +211,7 @@ class RoutePlanning:
         
     def soln_info(self):
         path = self.get_path()
-        return f'Path Length: {len(self.path)-1}, Path Cost: {self.path_cost()}'
+        return f'Path Length: {len(path)}, Path Cost: {self.path_cost()}'
         
         
     def get_state_id(self):
