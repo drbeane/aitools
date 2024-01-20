@@ -79,7 +79,7 @@ class TSP:
             for i in range(self.num_sites):
                 plt.text(self.sites[i,0]+1.5, self.sites[i,1]+3, s=i)
         
-        path = self.get_path()
+        path = [0] + self.get_path()
         if show_path:
             pts = self.sites[path, :]
             plt.plot(pts[:, 0], pts[:,1], linewidth=1, c='darkgrey')
@@ -105,15 +105,13 @@ class TSP:
     
     
     def get_path(self):
-        import gc
-        
         if len(self.path) > 0:
             return self.path
         node = self
-        while node is not None:
+        while node.parent is not None:
             self.path.insert(0, node.site)
             node = node.parent
-        gc.collect()
+        
         return self.path
     
     
