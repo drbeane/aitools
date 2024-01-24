@@ -24,6 +24,7 @@ class Oware:
         self.history = []
         self.action_taken = None
         self.parent = None
+        self.root = self
     
     
     def copy(self):
@@ -36,6 +37,8 @@ class Oware:
         new_state.history = [*self.history]
         new_state.action_taken = self.action_taken
         new_state.parent = self.parent
+
+        new_state.root = self if self.parent is None else self.root
         
         return new_state
     
@@ -72,6 +75,75 @@ class Oware:
             print(f'Player {temp.cur_player} takes action {a}.')
             temp = temp.take_action(a)
             temp.display()
+    
+    def generate_image(self, shade_action=False, show=False):
+        import cv2
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        box_size=64
+        border = 2
+        image = np.zeros((2*box_size + 2*border, 6*box_size + 2*border, 3))
+        
+        for r in range(2):
+            for c in range(6):
+                y0 = r*box_size + 2*border
+                y1 = (r+1)*box_size
+                x0 = c*box_size + 2*border
+                x1 = (c+1)*box_size
+                i = c if r == 0 else -c-1
+                v = self.board[i]
+                
+                color = (240, 240, 240)
+                if shade_action: 
+                    
+                    a = self.action_taken
+                    if a == 6*r + c:
+                        color = (200, 255, 255) if a < 6 else (255, 200, 255)
+                
+                image = cv2.rectangle(image, (x0+1, y0+1), (x1-2, y1-2), color=color, thickness=-1) 
+                x_margin = 16 if v < 10 else 0
+                y_margin = 44
+                image = cv2.putText(image, str(v), (x0 + x_margin, y0 + y_margin), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0,0,0), 3) 
+    
+        image = image.astype(np.uint8)
+
+        if show:
+            plt.figure(figsize=(6,6))
+            plt.imshow(image)
+            #plt.imshow(image, cmap='bone_r')
+            plt.grid()
+            #plt.axis('off')
+            plt.show()
+
+        return image
+                
+    def generate_gif(self, fps=1):
+        import imageio
+        import os
+        from IPython.display import Image, display
+
+        frames = [self.generate_image()] * 2 * fps
+        
+        node = self.parent
+        while node is not None:
+            f = node.generate_image(shade_action=True) 
+            frames.insert(0, f)
+            f = node.generate_image(shade_action=False) 
+            frames.insert(0, f)
+            node = node.parent
+        
+        for i in range(fps):
+            frames.insert(0, f)
+
+
+        os.makedirs('gifs', exist_ok=True)
+        n = len(os.listdir('gifs/')) + 1
+        filename = f'gifs/soln_gif_{n}.gif'
+        imageio.mimsave(filename, frames, format='GIF', duration=1000/fps, loop=0)   
+        
+        with open(filename,'rb') as f:
+            display(Image(data=f.read(), format='png'))
         
         
     def get_actions(self):
@@ -138,7 +210,7 @@ class Oware:
         
         #new_state.history.append(a)
         new_state.parent = self
-        new_state.action_taken = a
+        self.action_taken = a
         
         # Increment number of turns and the current player. 
         new_state.turns += 1
