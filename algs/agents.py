@@ -219,14 +219,19 @@ class GreedyPlayer:
     
 class MinimaxPlayer:
     
-    def __init__(self, name, depth, random_turns=0):
+    def __init__(self, name, depth, ABP=False, random_turns=0):
         self.name = name
         self.depth = depth    
         self.num_rand = random_turns
+        self.ABP = ABP
     
     def select_action(self, state):
         # Record the player number for agent making the move. 
         self.agent = state.cur_player
+        
+        # Create alpha and beta for AB Pruning
+        alpha = float('-inf') 
+        beta = float('inf') 
         
         best_score = float('-inf')
         best_actions = []
@@ -236,7 +241,10 @@ class MinimaxPlayer:
             
             # Evaluate child, which is in a Min layer. 
             child_state = state.take_action(a)
-            v = self.min_valuation(child_state, self.depth - 1)
+            v = self.min_valuation(child_state, alpha, beta, self.depth - 1)
+
+            # Update alpha
+            alpha = max(alpha, v)
             
             # Check to see if child score is better than current best
             if v == best_score:
@@ -249,7 +257,7 @@ class MinimaxPlayer:
         return best_actions[i]              
 
         
-    def min_valuation(self, state, depth):
+    def min_valuation(self, state, alpha, beta, depth):
         # The current player for states in a min layer is not the agent. 
         # But the states are evaluated from the persective of the agent. 
         
@@ -280,12 +288,18 @@ class MinimaxPlayer:
         for a in state.get_actions():
             # Evaluate child, which is in a Max layer. 
             child_state = state.take_action(a)
-            v = self.max_valuation(child_state, depth - 1)
+            v = self.max_valuation(child_state, alpha, beta, depth - 1)
             min_v = min(v, min_v)
+            
+            # Update beta
+            beta = min(beta, min_v)
+            
+            if self.ABP and min_v < alpha:
+                return min_v
             
         return min_v
         
-    def max_valuation(self, state, depth):
+    def max_valuation(self, state, alpha, beta, depth):
         # The current player for states in a max layer is the agent. 
         # States are evaluated from the persective of the agent. 
         
@@ -315,10 +329,17 @@ class MinimaxPlayer:
         for a in state.get_actions():
             # Evaluate child, which is in a Min layer. 
             child_state = state.take_action(a)
-            v = self.min_valuation(child_state, depth - 1)
+            v = self.min_valuation(child_state, alpha, beta, depth - 1)
             max_v = max(v, max_v)
+
+            # Update alpha            
+            alpha = max(alpha, max_v)
+            
+            if self.ABP and max_v > beta:
+                return max_v
             
         return max_v
+  
     
              
 class MinimaxPlayerABP:
