@@ -6,7 +6,7 @@
 
 import numpy as np
 import time as time
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 
 def play_game(root, agents, display_flags='', max_turns=None, 
