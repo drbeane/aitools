@@ -66,10 +66,11 @@ class Oware:
         return self.history 
     
     def replay_game(self, delay=1):
+        history = self.get_history()
         print('Initial State')
         temp = Oware(self.ppp, self.spp)
         temp.display()
-        for a in self.history:
+        for a in history:
             sleep(delay)
             clear_output(wait=True)
             print(f'Player {temp.cur_player} takes action {a}.')
