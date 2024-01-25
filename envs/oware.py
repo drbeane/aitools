@@ -58,7 +58,7 @@ class Oware:
         if len(self.history) > 0:
             return self.history
         
-        node = self
+        node = self.parent
         while node.parent is not None:
             self.history.insert(0, node.action_taken)
             node = node.parent
