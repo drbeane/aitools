@@ -55,8 +55,8 @@ class Oware:
     
     
     def get_history(self):
-        if len(self.history) > 0:
-            return self.history
+        #if len(self.history) > 0:
+        #    return self.history
         
         node = self.parent
         while node is not None:
