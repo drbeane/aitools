@@ -219,7 +219,7 @@ class GreedyPlayer:
     
 class MinimaxPlayer:
     
-    def __init__(self, name, depth, ABP=False, random_turns=0):
+    def __init__(self, name, depth, ABP=True, random_turns=0):
         self.name = name
         self.depth = depth    
         self.num_rand = random_turns
@@ -342,7 +342,7 @@ class MinimaxPlayer:
   
     
              
-class MinimaxPlayerABP:
+class MinimaxPlayerABP_RETIRED:
     
     def __init__(self, name, depth, random_turns=0):
         self.name = name
