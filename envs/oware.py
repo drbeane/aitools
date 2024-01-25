@@ -34,7 +34,8 @@ class Oware:
         new_state.turns = self.turns
         new_state.cur_player = self.cur_player
         new_state.score = self.score.copy()
-        new_state.history = [*self.history]
+        #new_state.history = [*self.history]
+        new_state.history = []
         new_state.action_taken = self.action_taken
         new_state.parent = self.parent
 
@@ -55,8 +56,8 @@ class Oware:
     
     
     def get_history(self):
-        #if len(self.history) > 0:
-        #    return self.history
+        if len(self.history) > 0:
+            return self.history
         
         node = self.parent
         while node is not None:
