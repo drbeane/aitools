@@ -117,10 +117,12 @@ class GeneticAlgorithm:
 
             max_score = self.scores.max()
             if max_score > best_score:
-                print('Updating Best')
                 best_score = max_score
                 idx = self.scores.argmax()
                 best_soln = self.population[idx,:].copy()
+                gen = self.generations + i + 1
+                print(f'Generation {gen}: New best score found! Current best score = {best_score}')
+                
 
             perc = np.percentile(self.scores, q=[0.25, 0.5, 0.75]).astype(int)
             minm = self.scores.min().astype(int)
