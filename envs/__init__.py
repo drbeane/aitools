@@ -12,3 +12,5 @@ from aitools.envs.tsp import TSP
 from aitools.envs.connectx import ConnectX
 from aitools.envs.oware import Oware
 from aitools.envs.gridland import GridLand
+from aitools.envs.knapsack import Knapsack
+from aitools.envs.job_assignment import JobAssignment

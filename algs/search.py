@@ -78,8 +78,6 @@ def general_search(root, alg, time_limit=120, display_results=True, update_rate=
         # If current node is not a solution, then expand it by looping over all available actions. 
         actions = cur_node.get_actions()    
         
-        #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        #print('Available actions:', actions)
         
         for a in actions:
             log['nodes_seen'] += 1
@@ -105,6 +103,9 @@ def general_search(root, alg, time_limit=120, display_results=True, update_rate=
                     priority = child.heuristic(alg='GBF')
                 elif alg == 'AST':
                     priority = child.path_cost() + child.heuristic(alg='AST')
+                else:
+                    raise Exception("Value provided for 'alg' parameter is not recognized.")
+                    
                 
                 # Add the child to the frontier
                 heapq.heappush(frontier, (priority, child))
@@ -160,6 +161,8 @@ def astar_search(env, time_limit=120, display_results=True, update_rate=None, **
 
 
 if __name__ == '__main__':
+    
+    raise Exception('oops')
     import os
     import sys
     os.system('cls')

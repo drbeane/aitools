@@ -10,4 +10,5 @@
 #-----------------------------------------------------------
 from aitools.algs.search import *
 from aitools.algs.agents import *
+from aitools.algs.genetic import *
 
