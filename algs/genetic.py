@@ -91,6 +91,8 @@ class GeneticAlgorithm:
         self.transformation = transformation
         self.epsilon = epsilon
 
+        n = len(str(num_generations))
+
         if self.np_random_state is not None:
             temp_random_state = np.random.get_state()
             np.random.set_state(self.np_random_state)
@@ -117,11 +119,11 @@ class GeneticAlgorithm:
 
             max_score = self.scores.max()
             if max_score > best_score:
-                best_score = max_score
+                best_score = int(max_score)
                 idx = self.scores.argmax()
                 best_soln = self.population[idx,:].copy()
                 gen = self.generations + i + 1
-                print(f'Generation {gen}: New best score found! Current best score = {best_score}')
+                print(f'Generation {gen:0{n}}: New best score found! Current best score = {best_score}')
                 
 
             perc = np.percentile(self.scores, q=[0.25, 0.5, 0.75]).astype(int)
@@ -137,7 +139,7 @@ class GeneticAlgorithm:
             if update_rate is not None:
                 if (i+1) % update_rate == 0:
                     gen = self.generations + i + 1
-                    print(f'Generation {gen}: Q1={perc[0]}, Med={perc[1]}, Q3={perc[2]}, Max={maxm}')
+                    print(f'Generation {gen:0{n}}: Q1={perc[0]}, Med={perc[1]}, Q3={perc[2]}, Max={maxm}')
 
 
         if self.np_random_state is not None:
