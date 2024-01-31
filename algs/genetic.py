@@ -95,6 +95,9 @@ class GeneticAlgorithm:
             temp_random_state = np.random.get_state()
             np.random.set_state(self.np_random_state)
 
+        best_score = float('-inf')
+        best_soln = None
+
         rng = tqdm(range(num_generations)) if show_progress else range(num_generations)
         for i in rng:
             children = self.generate_children()
@@ -108,10 +111,15 @@ class GeneticAlgorithm:
             mutations = np.random.choice(self.alleles, size=(n_survivors, self.soln_size))
 
             survivors = survivors * (1 - mutation_mask) + mutations * mutation_mask
-            #survivors = (survivors + mutation) % 2
-
+            
             self.population = np.vstack([survivors, children])
             self.evaluate_population()
+
+            max_score = self.scores.max()
+            if max_score > best_score:
+                best_score = max_score
+                idx = self.scores.argmax()
+                best_soln = self.population[idx,:].copy()
 
             perc = np.percentile(self.scores, q=[0.25, 0.5, 0.75]).astype(int)
             minm = self.scores.min().astype(int)
@@ -128,16 +136,17 @@ class GeneticAlgorithm:
                     gen = self.generations + i + 1
                     print(f'Generation {gen}: Q1={perc[0]}, Med={perc[1]}, Q3={perc[2]}, Max={maxm}')
 
+
         if self.np_random_state is not None:
             self.np_random_state = np.random.get_state()   # Store the current random state. 
             np.random.get_state(temp_random_state)         # Set state back as it was before method was called. 
 
         self.generations += num_generations
 
-        path_idx = self.scores.argmax()
-        path = self.population[path_idx,:]
+        #path_idx = self.scores.argmax()
+        #path = self.population[path_idx,:]
         
-        return self.env.set_state(path)
+        return self.env.set_state(best_soln)
 
     def plot_history(self, show_min=False):
         
