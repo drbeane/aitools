@@ -117,6 +117,7 @@ class GeneticAlgorithm:
 
             max_score = self.scores.max()
             if max_score > best_score:
+                print('Updating Best')
                 best_score = max_score
                 idx = self.scores.argmax()
                 best_soln = self.population[idx,:].copy()
