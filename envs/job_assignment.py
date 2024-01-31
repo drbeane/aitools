@@ -164,7 +164,7 @@ class JobAssignment:
                 new_state = new_state.take_action((w,j))
         return new_state
     
-        def lp_solver(self):
+    def lp_solver(self):
         import pulp as pl
         
         pl_vars = [[] for i in range(self.n_jobs+1)]        # List for storing pulb variable names: v_1_1, v_1_2, ...  v_w_j
