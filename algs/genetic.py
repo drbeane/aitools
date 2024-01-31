@@ -165,34 +165,6 @@ class GeneticAlgorithm:
         plt.show()
 
 
-    def lp_solver(self):
-        import pulp as pl
-        
-        pl_vars = [[] for i in range(self.n_jobs+1)]        # List for storing pulb variable names: v_1_1, v_1_2, ...  v_w_j
-        costs = []                  # List for containing expressions representing worker costs: 4*v_1, 8*v_2, ...
-        total_skill = [[] for i in range(self.n_jobs+1)]    # List of lists. Each list represents the skill of workers assigned to a job. 
-        
-        for w in range(self.n_workers):                                  # Loop over all workers
-            for j in range(self.n_jobs+1):                               # Loop over all jobs
-                v = pl.LpVariable(f'v_{w}_{j}', 0, 1, pl.LpInteger)      # Create variable
-                pl_vars[j].append(v)                                        # Add variable to list
-                costs.append(v * self.worker_costs[w])                  # Add worker cost to list         
-                total_skill[j].append(v * self.worker_skill[j,w])  # Add worker skill to list for each job 
-        
-        problem = pl.LpProblem('JobAssignment', pl.LpMinimize)     # Define pulp problem.
-        problem += sum(costs)                                      # Add objective      
-        
-        # Add Job Requirement Constraints
-        for j in range(self.n_jobs+1):                             
-            problem += sum(total_skill[j]) >= self.job_reqs[j]    
-        
-        # Add one job per worker constraints. 
-        for w in range(self.n_workers):
-            worker_col = [row[w] for row in pl_vars]  # Extract col of vars relating to one worker 
-            problem += sum(worker_col) <= 1
-        
-        status = problem.solve()
-        
  
         # Create Solution State
         new_state = self.copy()
