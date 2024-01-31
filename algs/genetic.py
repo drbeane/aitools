@@ -165,16 +165,6 @@ class GeneticAlgorithm:
         plt.show()
 
 
- 
-        # Create Solution State
-        new_state = self.copy()
-        for j in range(self.n_jobs+1):
-            for w, v in enumerate(pl_vars[j]):
-                if pl.value(v) == 1:
-                    new_state = new_state.take_action((w,j))
-  
-        print(new_state.soln_info())
-        return new_state
 
 
 if __name__ == '__main__':
