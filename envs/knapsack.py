@@ -138,6 +138,7 @@ class Knapsack:
         return int(value)
 
     def lp_solver(self):
+        import pulp as pl
         '''
         Applies an integer programming package to find the optimal solution. 
         '''
