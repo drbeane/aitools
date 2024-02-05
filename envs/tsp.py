@@ -207,6 +207,7 @@ class TSP:
         '''
         if alg == 'AST': return self.ast_heuristic()
         if alg == 'GBF': return self.gbf_heuristic()
+        if alg == 'GBF_NEW': return self.gbf_NEW_heuristic()
 
 
     def ast_heuristic(self):
@@ -260,6 +261,12 @@ class TSP:
         max_dist = dist.max() * (1 + len(self.unvisited))
         
         return round(max_dist + d, 1)
+    
+    def gbf_NEW_heuristic(self):
+        h = self.inc_dist + self.ast_heuristic()
+        
+        return round(h, 1)
+
             
     
 if __name__ == '__main__':

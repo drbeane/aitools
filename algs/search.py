@@ -101,6 +101,8 @@ def general_search(root, alg, time_limit=120, display_results=True, update_rate=
                     priority = child.path_cost()
                 elif alg == 'GBF':
                     priority = child.heuristic(alg='GBF')
+                elif alg == 'GBF_NEW':
+                    priority = child.heuristic(alg='GBF_NEW')
                 elif alg == 'AST':
                     priority = child.path_cost() + child.heuristic(alg='AST')
                 else:

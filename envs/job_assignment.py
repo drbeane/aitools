@@ -62,19 +62,19 @@ class JobAssignment:
 
     def display(self, flags='rcsat'):
         if 'r' in flags:
-            print(f'Job Requirements: {self.job_reqs}\n')
+            print(f'Job Requirements: {self.job_reqs}')
         if 'c' in flags:
-            print(f'Worker Costs:     {self.worker_costs}\n')
+            print(f'Worker Costs:     {self.worker_costs}')
         if 's' in flags:
-            print(f'Worker Skills:    \n{self.worker_skill}\n')
+            print(f'\nWorker Skills:    \n{self.worker_skill}\n')
         if 'a' in flags:
-            print('Assignments:   [ ', end='')
+            print('Assignments:       [ ', end='')
             for a in self.assignments:
                 if a == 0:
                     print('_ ', end='')
                 else:
                     print(a, end=' ')
-            print(']\n')
+            print(']')
         if 't' in flags:
             print(f'Total cost: {self.total_cost}')
         print()
