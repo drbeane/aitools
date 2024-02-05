@@ -68,7 +68,7 @@ class JobAssignment:
         if 's' in flags:
             print(f'\nWorker Skills:    \n{self.worker_skill}\n')
         if 'a' in flags:
-            print('Assignments:       [ ', end='')
+            print('Assignments:      [ ', end='')
             for a in self.assignments:
                 if a == 0:
                     print('_ ', end='')
