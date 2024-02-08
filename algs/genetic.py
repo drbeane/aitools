@@ -4,9 +4,9 @@ from tqdm import tqdm
 
 
 class GeneticAlgorithm:
-    
+
     def __init__(self, env, pop_size, init_zero=False, random_state=None):
-    
+
         self.env = env
         self.pop_size = pop_size
         self.rr = 0.4
@@ -16,11 +16,11 @@ class GeneticAlgorithm:
         self.crossover = 'uniform'
         self.np_random_state = None
         self.generations = 0
-        
+
         if random_state is not None:
             np_state = np.random.get_state()
             np.random.seed(random_state)
-        
+
         self.alleles, self.soln_size = env.get_gen_alg_params()
         
         pop_shape = (self.pop_size, self.soln_size)
@@ -31,14 +31,14 @@ class GeneticAlgorithm:
 
         self.scores = np.zeros(pop_size)
         self.evaluate_population()
-        
+
         self.history = {'min': [], 'q1':[], 'median': [], 'q3':[], 'max': []}
-        
+
         if random_state is not None:
             self.np_random_state = np.random.get_state()
-            np.random.set_state(np_state)    
-            
-    
+            np.random.set_state(np_state)
+
+
     def evaluate_population(self):
         for i in range(self.pop_size):
             specimen = self.population[i, :]
@@ -68,7 +68,7 @@ class GeneticAlgorithm:
             p1 = self.population[parents[2 * i], :]
             p2 = self.population[parents[2 * i + 1], :]
             children[i] = self.make_child(p1, p2)
-        
+
         return children
 
 
@@ -80,11 +80,11 @@ class GeneticAlgorithm:
             cut_point = np.random.choice(range(1, self.env.soln_size-1))
             child = np.hstack([p1[:cut_point], p2[cut_point:]])
         return child
-    
-    
-    def run_evolution(self, num_generations, rr, mr, crossover='uniform', transformation=None, 
+
+
+    def run_evolution(self, num_generations, rr, mr, crossover='uniform', transformation=None,
                       epsilon=1e-6, update_rate=None, show_progress=False, silent=False):
-        
+
         self.rr = rr
         self.mr = mr
         self.crossover = crossover
@@ -103,17 +103,17 @@ class GeneticAlgorithm:
         rng = tqdm(range(num_generations)) if show_progress else range(num_generations)
         for i in rng:
             children = self.generate_children()
-            
+
             n_survivors = self.pop_size - len(children)
             surv_idx = self.roulette_selection(n_survivors)
             survivors = self.population[surv_idx, :]
-            
+
             mutation_mask = np.random.choice([0,1], size=(n_survivors, self.soln_size),
                                              p=[1 - self.mr, self.mr])
             mutations = np.random.choice(self.alleles, size=(n_survivors, self.soln_size))
 
             survivors = survivors * (1 - mutation_mask) + mutations * mutation_mask
-            
+
             self.population = np.vstack([survivors, children])
             self.evaluate_population()
 
@@ -125,7 +125,7 @@ class GeneticAlgorithm:
                 gen = self.generations + i + 1
                 if not silent:
                     print(f'Generation {gen:0{n}}: New best score found! Current best score = {best_score}')
-                
+
 
             perc = np.percentile(self.scores, q=[0.25, 0.5, 0.75]).astype(int)
             minm = self.scores.min().astype(int)
@@ -144,18 +144,18 @@ class GeneticAlgorithm:
 
 
         if self.np_random_state is not None:
-            self.np_random_state = np.random.get_state()   # Store the current random state. 
-            np.random.get_state(temp_random_state)         # Set state back as it was before method was called. 
+            self.np_random_state = np.random.get_state()   # Store the current random state.
+            np.random.get_state(temp_random_state)         # Set state back as it was before method was called.
 
         self.generations += num_generations
 
         #path_idx = self.scores.argmax()
         #path = self.population[path_idx,:]
-        
+
         return self.env.set_state(best_soln)
 
     def plot_history(self, show_min=False):
-        
+
         for k in self.history.keys():
             if k == 'min' and show_min == False:
                 continue
@@ -169,15 +169,14 @@ class GeneticAlgorithm:
 
 
 if __name__ == '__main__':
-    
+
     import sys
     sys.path.append('algorithms/')
     sys.path.append('environments/')
     from aitools.envs import Knapsack
-    
+
     ks = Knapsack(num_items=20, capacity=[40, 30], random_state=1)
 
     ga = GeneticAlgorithm(env=ks, pop_size=1000, init_zero=True, random_state=1)
 
     soln = ga.run_evolution(150, rr=0.4, mr=1e-3, update_rate=20)
-    
