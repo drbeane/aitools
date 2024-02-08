@@ -83,7 +83,7 @@ class GeneticAlgorithm:
     
     
     def run_evolution(self, num_generations, rr, mr, crossover='uniform', transformation=None, 
-                      epsilon=1e-6, update_rate=None, show_progress=False):
+                      epsilon=1e-6, update_rate=None, show_progress=False, silent=False):
         
         self.rr = rr
         self.mr = mr
@@ -123,7 +123,8 @@ class GeneticAlgorithm:
                 idx = self.scores.argmax()
                 best_soln = self.population[idx,:].copy()
                 gen = self.generations + i + 1
-                print(f'Generation {gen:0{n}}: New best score found! Current best score = {best_score}')
+                if not silent:
+                    print(f'Generation {gen:0{n}}: New best score found! Current best score = {best_score}')
                 
 
             perc = np.percentile(self.scores, q=[0.25, 0.5, 0.75]).astype(int)
