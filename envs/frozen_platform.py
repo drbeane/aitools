@@ -355,7 +355,7 @@ class FrozenPlatform():
  
  
     def generate_episode(self, policy=None, epsilon=None, max_steps=None, 
-                         updates=True, random_state=None):
+                         show_steps=False, show_result=True, random_state=None):
         '''
         Generates an episode according to a policy. 
         '''
@@ -391,11 +391,17 @@ class FrozenPlatform():
                     a = policy[node.state]
                 
             node = node.take_action(a)
-            if updates:
+            if show_steps:
                 print(f'Taking action {a}. New state is {node.state}.')
             
         if random_state is not None:
             np.random.set_state(np_state)       
+        
+        if show_result:
+            if node.state == node.goal:
+                print('The agent reached the goal!')
+            else:
+                print('The agent failed to reach the goal.')
         
         return node
     
