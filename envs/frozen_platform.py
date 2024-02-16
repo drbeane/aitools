@@ -355,7 +355,7 @@ class FrozenPlatform():
  
  
     def generate_episode(self, policy=None, epsilon=None, max_steps=None, 
-                         show_steps=False, show_result=True, random_state=None):
+                         show_steps=False, show_result=False, random_state=None):
         '''
         Generates an episode according to a policy. 
         '''
