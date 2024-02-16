@@ -14,3 +14,4 @@ from aitools.envs.oware import Oware
 from aitools.envs.gridland import GridLand
 from aitools.envs.knapsack import Knapsack
 from aitools.envs.job_assignment import JobAssignment
+from aitools.envs.frozen_platform import FrozenPlatform
