@@ -70,7 +70,7 @@ class MCAgent:
             
             
             # Generate an episode. 
-            ep = node.generate_episode(self.policy, max_steps=max_steps, updates=False)
+            ep = node.generate_episode(self.policy, max_steps=max_steps)
             
             # Calculate Returns for each step. 
             k = len(ep.rewards)
@@ -124,8 +124,7 @@ class MCAgent:
                 node = self.env.copy()
                 
             # Generate an episode. 
-            ep = node.generate_episode(self.policy, epsilon=epsilon, 
-                                       max_steps=max_steps, updates=False)
+            ep = node.generate_episode(self.policy, epsilon=epsilon, max_steps=max_steps)
             
             # Calculate Returns for each step. 
             k = len(ep.rewards)
