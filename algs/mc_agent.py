@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 from matplotlib.cm import get_cmap
 
 
@@ -104,7 +104,7 @@ class MCAgent:
  
         
     def control(self, episodes, epsilon, alpha=None, exploring_starts=False, 
-                max_steps=None, track_history=True, show_progress=True):
+                max_steps=None, track_history=True, show_progress=False):
         
         if max_steps == None:
             max_steps = float('inf')
