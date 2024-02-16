@@ -46,7 +46,7 @@ class MCAgent:
     
         
     def evaluate_policy(self, episodes, alpha=None, exploring_starts=False, 
-                        max_steps=None, track_history=True, show_progress=True):
+                        max_steps=None, track_history=True, show_progress=False):
         '''
         Implements first-visit MC Prediction. 
         '''
