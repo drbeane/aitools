@@ -15,3 +15,4 @@ from aitools.envs.gridland import GridLand
 from aitools.envs.knapsack import Knapsack
 from aitools.envs.job_assignment import JobAssignment
 from aitools.envs.frozen_platform import FrozenPlatform
+from aitools.envs.bot_env import BotPlayerEnv
