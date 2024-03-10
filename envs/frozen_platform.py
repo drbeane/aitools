@@ -55,7 +55,7 @@ class FrozenPlatform():
         # The lines below are a dumb hack to cause the seed to behave the same when
         # setting holes=0, holes=None, and holes=[]. 
         if (holes == []) or (holes is None):
-            self.holes = 0            
+            holes = 0            
         
         if type(holes) == int:
             candidates = [
