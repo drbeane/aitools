@@ -62,6 +62,7 @@ class FrozenPlatform():
         else:
             # The line below is a dumb hack to cause the seed to behave the same when
             # setting holes=0, holes=None, and holes=[]. 
+            print('--')
             self.holes = list(np.random.choice(candidates, 0, replace=False))
             self.holes = []
         
