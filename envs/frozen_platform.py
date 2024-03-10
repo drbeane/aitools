@@ -51,6 +51,12 @@ class FrozenPlatform():
             np.random.seed(random_state)
         
         # Generate Holes
+        
+        # The lines below are a dumb hack to cause the seed to behave the same when
+        # setting holes=0, holes=None, and holes=[]. 
+        if (holes == []) or (holes is None):
+            self.holes = 0            
+        
         if type(holes) == int:
             candidates = [
                 x for x in range(1, self.num_states) 
@@ -60,10 +66,6 @@ class FrozenPlatform():
         elif type(holes) == list:
             self.holes = holes
         else:
-            # The line below is a dumb hack to cause the seed to behave the same when
-            # setting holes=0, holes=None, and holes=[]. 
-            print('--')
-            self.holes = list(np.random.choice(candidates, 0, replace=False))
             self.holes = []
         
         # Generate Slip Probabilites
