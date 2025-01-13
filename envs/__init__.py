@@ -7,6 +7,7 @@
 # directly from aitools.envs rather than from submodules
 #-----------------------------------------------------------
 from aitools.envs.route_planning import RoutePlanning
+from aitools.envs.alt_route_planning import AltRoutePlanning
 from aitools.envs.npuzzle import NPuzzle
 from aitools.envs.tsp import TSP    
 from aitools.envs.connectx import ConnectX

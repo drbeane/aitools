@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
 
-class RoutePlanning:
+class AltRoutePlanning:
     
     def __init__(self, num_sites, q=0.2, start=None, goal=None, random_state=None, is_copy=False):
         
@@ -21,20 +21,22 @@ class RoutePlanning:
             np_state = np.random.get_state()  # Store NumPy random state to restore later
             np.random.seed(random_state)      # Set the seed
         
+        
         while True:  # Loop until a solvable example is obtained. 
             # Generate site locations
-            num_gen = int(num_sites/(1-q))
-            k = int(num_gen**0.5)
-            site_arrays = [
-                np.array([(0,0), (0,100), (100,0), (100,100)]),
-                [(0,x) for x in np.random.uniform(0, 100, k).astype(int)],
-                [(100,x) for x in np.random.uniform(0, 100, k).astype(int)],
-                [(x,0) for x in np.random.uniform(0, 100, k).astype(int)],
-                [(x,100) for x in np.random.uniform(0, 100, k).astype(int)],
-                np.random.uniform(0, 100, size=(num_gen - 4*k - 4, 2)).astype(int)
-            ]
+            #num_gen = int(num_sites/(1-q))
+            #k = int(num_gen**0.5)
+            #site_arrays = [
+            #    np.array([(0,0), (0,100), (100,0), (100,100)]),
+            #    [(0,x) for x in np.random.uniform(0, 100, k).astype(int)],
+            #    [(100,x) for x in np.random.uniform(0, 100, k).astype(int)],
+            #    [(x,0) for x in np.random.uniform(0, 100, k).astype(int)],
+            #    [(x,100) for x in np.random.uniform(0, 100, k).astype(int)],
+            #    np.random.uniform(0, 100, size=(num_gen - 4*k - 4, 2)).astype(int)
+            #
             
-            self.sites = np.vstack(site_arrays)
+            #self.sites = np.vstack(site_arrays)
+            self.sites = np.random.uniform(0, 100, size=(num_sites, 2)).astype(int)
             np.random.shuffle(self.sites)
                
             # Generate Edges
@@ -58,6 +60,7 @@ class RoutePlanning:
 
             if self.check_solvable():
                 break
+        
 
         # History
         self.path = []
@@ -93,7 +96,7 @@ class RoutePlanning:
         '''
         Return a copy of this instance. 
         '''
-        new_node = RoutePlanning(self.num_sites, 2, is_copy=True)
+        new_node = AltRoutePlanning(self.num_sites, 2, is_copy=True)
         new_node.goal = self.goal
         new_node.sites = self.sites           # This is reference, not a copy. 
         new_node.simplices = self.simplices
@@ -123,7 +126,7 @@ class RoutePlanning:
         
         s1 = self.sites[self.state]
         s2 = self.sites[new_node.state]
-        new_node.distance += np.sum((s1 - s2)**2)**0.5
+        new_node.distance += int(np.sum((s1 - s2)**2)**0.5)
         
         return new_node
 
@@ -196,7 +199,7 @@ class RoutePlanning:
             fs = label_info['size']
             for i in range(self.num_sites):
                 x, y = self.sites[i,:]
-                if (x >= xlim[0]) and (x <= xlim[1]) and (y >= ylim[0]) and (y <= ylim[1]):
+                if (x > xlim[0]) and (x < xlim[1]) and (y > ylim[0]) and (y < ylim[1]):
                     plt.text(self.sites[i,0]+k, self.sites[i,1]+k, s=i, fontsize=fs)
         
         if border == False:
@@ -232,7 +235,7 @@ class RoutePlanning:
 if __name__ == '__main__':
     import os
     os.system('cls')
-    state = RoutePlanning(num_sites=500, start=137, random_state=1)
+    state = AltRoutePlanning(num_sites=500, start=137, random_state=1)
     state = state.random_walk(steps=20, random_state=2)
     state.display(show_path=True)
     path = state.get_path()
