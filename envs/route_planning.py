@@ -117,6 +117,9 @@ class RoutePlanning:
     
     
     def take_action(self, a):
+        if a not in self.get_actions():
+            print('That is not a valid action.')
+            return 
         new_node = self.copy()
         new_node.state = a
         new_node.parent = self
