@@ -199,8 +199,8 @@ class AltRoutePlanning:
             fs = label_info['size']
             for i in range(self.num_sites):
                 x, y = self.sites[i,:]
-                if (x > xlim[0]) and (x < xlim[1]) and (y > ylim[0]) and (y < ylim[1]):
-                    plt.text(self.sites[i,0]+k, self.sites[i,1]+k, s=i, fontsize=fs)
+                #if (x > xlim[0]) and (x < xlim[1]) and (y > ylim[0]) and (y < ylim[1]):
+                plt.text(self.sites[i,0]+k, self.sites[i,1]+k, s=i, fontsize=fs)
         
         if border == False:
             plt.axis('off')
