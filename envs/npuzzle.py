@@ -126,7 +126,7 @@ class NPuzzle:
                 new_node.conflicts += new_node.count_col_conflicts(target_row, blank_col)
         
         # Record the action 
-        new_node.path.append(a)
+        #new_node.path.append(a)
         new_node.parent = self
         new_node.action_count = new_node.action_count + 1
         new_node.action_taken = a
