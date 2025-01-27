@@ -12,6 +12,339 @@ class Tree:
         if seed is not None:
             np.random.seed(seed)
 
+        while True:
+            #print('FAILED')
+            self.build_tree()
+            self.assign_costs()
+            self.find_solns()
+            
+            soln_list = list(self.solns.values())
+            conditions = [
+                self.all_unique, 
+                len(np.unique(soln_list)) == 3, # 6
+                self.solns['gbf'] != self.solns['ast'],   # 8 
+                len(self.exp_order['ast']) > 4
+            ][:cond_level]
+            
+            if sum(conditions) == len(conditions):
+                break
+        
+        return
+        
+        
+    
+    def build_tree(self):
+        letters = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        nodes = {x:{'cost':None, 'heur':None, 'children':[], 'parent':None} for x in letters}
+        unused_letters = letters.copy()
+        unused_letters.remove('A')
+        level = [['A'], [], [], []]
+            
+        # 3 random nodes in level 1
+        level[1] = sorted(list(np.random.choice(unused_letters, size=3, replace=False)))
+        for x in level[1]: unused_letters.remove(x)
+        # 7 random nodes in level 2
+        level[2] = sorted(list(np.random.choice(unused_letters, size=7, replace=False)))
+        # 15 random nodes in level 1
+        for x in level[2]: unused_letters.remove(x)
+        level[3] = sorted(list(unused_letters))
+        
+        #------------------------------
+        # Set Children
+        #------------------------------
+        # Set children of root
+        nodes['A']['children'] = level[1]
+        
+        # Assign nodes in lvl 2 to lvl 1 parents
+        k = np.random.choice([0,1,2])  # Select one node to have 3 children
+        temp = level[2].copy()
+        for i, node in enumerate(level[1]):
+            t = 3 if i == k else 2
+            nodes[node]['children'] = temp[:t]
+            temp = temp[t:]
+        
+        # Assign nodes in lvl 3 to lvl 2 parents
+        j = np.random.choice([1,2,3,4])  # Select one L2 node to have no children
+        options = [x for x in [0,1,2,3,4,5,6] if x != j]
+        k = np.random.choice(options, size=3, replace=False) # Select 3 L2 nodes to have 3 children
+        temp = level[3].copy()
+        for i, node in enumerate(level[2]):
+            if i == j:
+                continue
+            t = 3 if i in k else 2
+            nodes[node]['children'] = temp[:t]
+            temp = temp[t:]
+        
+        
+        #------------------------------
+        # Set Parents
+        #------------------------------
+        for N in letters:
+            for C in nodes[N]['children']:
+                nodes[C]['parent'] = N
+        
+        #------------------------------------------
+        # Exploration Order for BFS and DFS
+        #------------------------------------------
+        bfs_order_full = sum(level, start=[])
+        dfs_order_full = ['A']
+        for L1_node in level[1][::-1]:
+            dfs_order_full.append(L1_node)
+            for L2_node in nodes[L1_node]['children'][::-1]:
+                dfs_order_full.append(L2_node)
+                for L3_node in nodes[L2_node]['children'][::-1]:
+                    dfs_order_full.append(L3_node)
+        
+        
+        #------------------------------
+        # Set Goals
+        #------------------------------
+        while True:
+            G1 = level[2][j]
+            G2, G3 = np.random.choice(level[3][1:-2], size=2, replace=False)
+            
+            goals = sorted([G1, G2, G3])
+            
+            bfs_soln_idx = min([bfs_order_full.index(g) for g in goals])
+            dfs_soln_idx = min([dfs_order_full.index(g) for g in goals])
+            bfs_soln = bfs_order_full[bfs_soln_idx]
+            dfs_soln = dfs_order_full[dfs_soln_idx]
+
+            conditions = [
+                bfs_soln != dfs_soln,
+            ]
+            
+            if sum(conditions) == len(conditions):
+                break
+        
+        bfs_exp_order = bfs_order_full[:bfs_soln_idx+1]
+        dfs_exp_order = dfs_order_full[:dfs_soln_idx+1]
+            
+        self.solns = {'dfs':dfs_soln, 'bfs':bfs_soln}
+        self.exp_order = {'dfs':dfs_exp_order, 'bfs':bfs_exp_order}
+        
+        self.level = level
+        self.nodes = nodes
+        self.goals = goals
+        self.l2_goal = G1
+    
+    
+    def assign_costs(self):
+        import pandas as pdf
+        nodes = self.nodes
+        level = self.level
+        
+        cost_df = pd.DataFrame({
+            'cost':np.zeros(26),
+            'heur':np.zeros(26),
+            'total':np.zeros(26),
+        }, index=list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')).astype(int)
+        
+        
+        #---------------------------------
+        # Assign Actual Costs
+        #---------------------------------
+        cost_options = list(range(10,85))
+        
+        # Level 0
+        Ac = np.random.choice([c for c in cost_options if c <= 15])
+        cost_df.loc['A', 'cost'] = Ac
+        cost_options.remove(Ac)
+        
+        # Level 1
+        for N in level[1]:
+            option_array = np.array(cost_options)
+            options = option_array[(option_array >= Ac + 5) & (option_array < 35)]
+            c = np.random.choice(options)
+            cost_df.loc[N, 'cost'] = c
+            cost_options.remove(c)
+
+        # Level 2
+        for N in level[2]:
+            parent = nodes[N]['parent']
+            par_cost = cost_df.loc[parent, 'cost']
+            option_array = np.array(cost_options)
+            options = option_array[(option_array >= par_cost + 8) & (option_array < 60)]
+            c = np.random.choice(options)
+            cost_df.loc[N, 'cost'] = c
+            cost_options.remove(c)
+        
+        # Level 3
+        for N in level[3]:
+            parent = nodes[N]['parent']
+            par_cost = cost_df.loc[parent, 'cost']
+            option_array = np.array(cost_options)
+            options = option_array[(option_array >= par_cost + 8)]
+            #print(options)
+            c = np.random.choice(options)
+            cost_df.loc[N, 'cost'] = c
+            cost_options.remove(c)
+        
+        def find_min_soln_cost(node):
+            
+            if node in self.goals:
+                return cost_df.loc[node, 'cost']
+            
+            min_cost = 99
+            children = nodes[node]['children']
+            for c in children:
+                if c in self.goals:
+                    min_cost = min([min_cost, cost_df.loc[c, 'cost']])
+                else:
+                    temp = find_min_soln_cost(c)
+                    min_cost = min([min_cost, temp])
+            return min_cost
+        
+        #---------------------------------
+        # Assign Heuristic Values
+        #---------------------------------
+        goal_costs = []
+        for g in self.goals:
+            cost_df.loc[g, 'total'] = cost_df.loc[g, 'cost']
+            goal_costs.append(cost_df.loc[g, 'cost'])
+            
+        cost_df['max_heur'] = np.zeros(26).astype(int)
+        
+        letters = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        
+        for N in letters:
+            cost = cost_df.loc[N, 'cost']
+            cost_df.loc[N, 'max_heur'] = find_min_soln_cost(N) - cost
+        
+        cost_df = cost_df.sort_values('max_heur')
+            
+        found = False
+        while not found:
+            try:
+                used_heur = []
+                used_totals = goal_costs.copy()
+                for N in cost_df.index.values:
+                    if N in self.goals:
+                        continue
+                    
+                    cost = cost_df.loc[N, 'cost']
+                    options = range(5, cost_df.loc[N, 'max_heur'])
+                    options = [x for x in options if x not in used_heur]
+                    options = [x for x in options if x+cost not in used_totals]
+                    options = [x for x in options if x+cost < 100]
+                    
+                    h = np.random.choice(options)
+                    t = cost + h
+                    
+                    cost_df.loc[N, 'heur'] = h
+                    cost_df.loc[N, 'total'] = t
+                    used_heur.append(h)
+                    used_totals.append(t)
+                    found = True
+            except:
+                print('FAILED!')
+                pass
+                
+
+        cost_df = cost_df.sort_index()
+            
+            
+        self.cost_df = cost_df
+        
+        
+    def find_solns(self):
+        nodes = self.nodes
+        
+        sorted_cost_df = self.cost_df.sort_values('cost')
+        
+        # Find UCS Solution
+        ucs_order_full = list(sorted_cost_df.index)
+        ucs_soln_idx = min([ucs_order_full.index(g) for g in self.goals])
+        ucs_soln = ucs_order_full[ucs_soln_idx]
+                       
+
+        ucs_exp_order = ucs_order_full[:ucs_soln_idx+1]
+        
+        
+        # Find GBF Solution
+        frontier = [('A', self.cost_df.loc['A', 'heur'])]
+        gbf_exp_order = []
+        while True:
+            sel = frontier.pop(0)
+            node = sel[0]
+            gbf_exp_order.append(node)
+            if node in self.goals: break
+                
+            for c in nodes[node]['children']:
+                frontier.append((c, self.cost_df.loc[c, 'heur']))
+            frontier = sorted(frontier, key=lambda x : x[1])
+        gbf_soln = gbf_exp_order[-1]
+        
+        # Find AST Solution
+        priority = self.cost_df.loc['A', 'total']
+        frontier = [('A', priority)]
+        ast_exp_order = []
+        while True:
+            sel = frontier.pop(0)
+            node = sel[0]
+            ast_exp_order.append(node)
+            if node in self.goals: break
+                
+            for c in nodes[node]['children']:
+                priority = self.cost_df.loc[c, 'total']
+                frontier.append((c, priority))
+            frontier = sorted(frontier, key=lambda x : x[1])
+        ast_soln = ast_exp_order[-1]
+        
+        
+        dfs_soln = self.solns['dfs']
+        bfs_soln = self.solns['bfs']
+        soln_list = [dfs_soln, bfs_soln, ucs_soln, gbf_soln, ast_soln]
+        
+        self.solns['ucs'] = ucs_soln
+        self.solns['gbf'] = gbf_soln
+        self.solns['ast'] = ast_soln
+        
+        
+        
+        dfs_exp_order = self.exp_order['dfs'] 
+        bfs_exp_order = self.exp_order['bfs'] 
+        
+        self.exp_order['ucs'] = ucs_exp_order
+        self.exp_order['gbf'] = gbf_exp_order
+        self.exp_order['ast'] = ast_exp_order
+        
+        letters = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        
+        # Build Distrctors
+        dfs_distractor = dfs_exp_order.copy()
+        bfs_distractor = bfs_exp_order.copy()
+        ucs_distractor = ucs_exp_order.copy()
+        gbf_distractor = gbf_exp_order.copy()
+        ast_distractor = ast_exp_order.copy()
+        d_list = [dfs_distractor, bfs_distractor, ucs_distractor, gbf_distractor, ast_distractor]
+        a_list = [dfs_exp_order, bfs_exp_order, ucs_exp_order, gbf_exp_order, ast_exp_order]
+        for dist, ans in zip(d_list, a_list):
+            while True:
+                n_replace = len(ans) - 3 if len(ans) > 3 else 1
+                temp = [x for x in letters if x not in ans[:2] + ans[-1:]]
+                new_mid = np.random.choice(temp, size=n_replace)
+                start = 2 if len(ans) > 3 else 1
+                for i, v in enumerate(new_mid): dist[start+i] = v
+                if dist != ans: break
+        
+        self.a_list = a_list                
+        self.d_list = d_list
+        self.distractors = d_list
+                        
+        # Loop to check uniqueness of answers and distractors
+        all_unique = True
+        options = d_list + a_list
+        for i in range(9):
+            for j in range(i+1, 10):
+                if options[i] == options[j]: 
+                    all_unique = False
+                       
+        self.all_unique = all_unique      
+        
+           
+   
+    def build_tree_SAVE(self):
         letters = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         nodes = {x:{'cost':0, 'heur':99, 'children':[]} for x in letters}
         unused_letters = letters.copy()
@@ -82,238 +415,85 @@ class Tree:
             if sum(conditions) == len(conditions):
                 break
         
-        
-        #-----------------------------------------
-        # Set Path Costs and Heuristic Values
-        # And find UCS, GBF, and AST solns
-        #-----------------------------------------
-        while True:
-            #for n in letters: nodes[n]['cost'] = 0
-            
-            # Set Path Costs
-            for lvl in level[:3]:
-                for node in lvl:
-                    base = nodes[node]['cost']
-                    for child in nodes[node]['children']:
-                        d = np.random.choice(range(5,50))
-                        nodes[child]['cost'] = base + d
-
-            # Determine Solution Costs
-            soln_costs = [nodes[g]['cost'] for g in goals]
-
-            # Set Heuristic Values
-            huer_values_used = []
-            for g in goals: nodes[g]['heur'] = 0
-            nodes['A']['heur'] = min(soln_costs) - 5
-            for node in level[1]:
-                max_cost = 99
-                child_soln_found = False
-                for c2 in nodes[node]['children']: # Explore L2 children
-                    if child_soln_found: break
-                    if c2 in goals:
-                        max_cost = min(max_cost, nodes[c2]['cost'])
-                        child_soln_found = True
-                        break
-                    
-                    for c3 in nodes[c2]['children']: # Explore L3 children
-                        if c3 in goals:
-                            max_cost = min(max_cost, nodes[c3]['cost'])
-                            child_soln_found = True
-                            break
-                options = list(range(1, max_cost - nodes[node]['cost']))
-                for h in huer_values_used:
-                    if h in options: options.remove(h)
-                h_val = np.random.choice(options)
-                huer_values_used.append(h_val)
-                nodes[node]['heur'] = h_val
-            
-            for node in level[2]:
-                if node in goals: continue
-                max_cost = 99
-                for c3 in nodes[node]['children']: # Explore L3 children
-                    if c3 in goals:
-                        max_cost = min(max_cost, nodes[c3]['cost'])
-                        break
-                
-                options = list(range(1, max_cost - nodes[node]['cost']))
-                for h in huer_values_used:
-                    if h in options: options.remove(h)
-                try:
-                    h_val = np.random.choice(options)
-                except:
-                    h_val = 1
-                huer_values_used.append(h_val)
-                nodes[node]['heur'] = h_val
-            
-            # Create Data Structres for Costs and Heuristics
-            costs = [nodes[x]['cost'] for x in letters]           
-            heur = [nodes[x]['heur'] for x in letters]
-            cost_df = pd.DataFrame(dict(cost=costs, heur=heur), index=letters)            
-            
-            # Change 99 heuristics
-            non_trivial_hvals = [x for x in cost_df.heur if x not in [0,99]]
-            idx_99 = np.where(cost_df.heur.values == 99)[0]
-            rand_heur = np.random.choice(
-            range(max(non_trivial_hvals) + 1, 100), size=len(idx_99)
-                )
-            for i,h in zip(idx_99, rand_heur):
-                cost_df.heur.values[i] = h
-            
-            cost_df['total'] = cost_df.cost + cost_df.heur
-            sorted_cost_df = cost_df.sort_values('cost')
-            
-            # Find UCS Solution
-            ucs_order_full = list(sorted_cost_df.index)
-            ucs_soln_idx = min([ucs_order_full.index(g) for g in goals])
-            ucs_soln = ucs_order_full[ucs_soln_idx]
-            
-            # Node expansion orders of uniformed algs
-            bfs_exp_order = bfs_order_full[:bfs_soln_idx+1]
-            dfs_exp_order = dfs_order_full[:dfs_soln_idx+1]
-            ucs_exp_order = ucs_order_full[:ucs_soln_idx+1]
-            
-            # Find GBF Solution
-            frontier = [('A', nodes['A']['heur'])]
-            gbf_exp_order = []
-            while True:
-                sel = frontier.pop(0)
-                node = sel[0]
-                gbf_exp_order.append(node)
-                if node in goals: break
-                    
-                for c in nodes[node]['children']:
-                    frontier.append((c, nodes[c]['heur']))
-                frontier = sorted(frontier, key=lambda x : x[1])
-            gbf_soln = gbf_exp_order[-1]
-            
-            # Find AST Solution
-            priority = nodes['A']['heur'] + nodes['A']['cost']
-            frontier = [('A', priority)]
-            ast_exp_order = []
-            while True:
-                sel = frontier.pop(0)
-                node = sel[0]
-                ast_exp_order.append(node)
-                if node in goals: break
-                    
-                for c in nodes[node]['children']:
-                    priority = nodes[c]['heur'] + nodes[c]['cost']
-                    frontier.append((c, priority))
-                frontier = sorted(frontier, key=lambda x : x[1])
-            ast_soln = ast_exp_order[-1]
-            soln_list = [dfs_soln, bfs_soln, ucs_soln, gbf_soln, ast_soln]
-            
-            # Build Distrctors
-            dfs_distractor = dfs_exp_order.copy()
-            bfs_distractor = bfs_exp_order.copy()
-            ucs_distractor = ucs_exp_order.copy()
-            gbf_distractor = gbf_exp_order.copy()
-            ast_distractor = ast_exp_order.copy()
-            d_list = [dfs_distractor, bfs_distractor, ucs_distractor, gbf_distractor, ast_distractor]
-            a_list = [dfs_exp_order, bfs_exp_order, ucs_exp_order, gbf_exp_order, ast_exp_order]
-            for dist, ans in zip(d_list, a_list):
-                while True:
-                    n_replace = len(ans) - 3 if len(ans) > 3 else 1
-                    temp = [x for x in letters if x not in ans[:2] + ans[-1:]]
-                    new_mid = np.random.choice(temp, size=n_replace)
-                    start = 2 if len(ans) > 3 else 1
-                    for i, v in enumerate(new_mid): dist[start+i] = v
-                    if dist != ans: break
-                            
-                            
-            # Loop to check uniques of answers and distractors
-            all_unique = True
-            options = d_list + a_list
-            for i in range(9):
-                for j in range(i+1, 10):
-                    if options[i] == options[j]: 
-                        all_unique = False
-            
-            # Set Conditions    
-            conditions = [
-                all_unique, # 1
-                len(cost_df.cost.unique()) == 26, #2 
-                len(cost_df.total.unique()) == 26, # 3
-                len(np.unique(non_trivial_hvals)) == len(non_trivial_hvals), #4 
-                max(soln_costs) < 2 * min(soln_costs), # 5
-                len(np.unique(soln_list)) == 3, # 6
-                max(costs) < 100,       # 7
-                gbf_soln != ast_soln,   # 8 
-            ][:cond_level]
-            
-            if sum(conditions) == len(conditions):
-                break
-        
-        self.solns = dict(
-            dfs=dfs_soln, bfs=bfs_soln, ucs=ucs_soln, gbf=gbf_soln, ast=ast_soln
-        )
-        self.exp_order = dict(
-            dfs=dfs_exp_order, bfs=bfs_exp_order, ucs=ucs_exp_order,
-            gbf=gbf_exp_order, ast=ast_exp_order
-        )
-        self.cost_df = cost_df
         self.level = level
         self.nodes = nodes
-        self.goals = goals
-        self.distractors = d_list
-        
         
 
     def get_display_str(self):
+        level = self.level
+        nodes = self.nodes
+
+        #---------------------------
+        # Build Bottom Half
+        #---------------------------
+        lvl2_string = ''
+        conn_2_3 = ''
+        lvl3_string = ''
+        for node in level[2]:
+            children = nodes[node]['children']
+            
+            if len(children) == 0:
+                lvl2_string += f'{node}   '
+                conn_2_3 += ' '*4
+                lvl3_string += ' '*4
+            elif len(children) == 2:
+                lvl2_string += f' {node}    '
+                lvl3_string += ' '.join(children) + '   '
+                conn_2_3 += '┌┴┐   '
+            else:
+                lvl2_string += f'  {node}     '
+                lvl3_string += ' '.join(children) + '   '
+                conn_2_3 += '┌─┼─┐   '
+            
+        #---------------------------
+        # Build Top Half
+        #---------------------------
+        blank = list(' '*len(lvl3_string))
+        lvl0_array = np.array(blank)
+        lvl1_array = np.array(blank)
+        conn_0_1_array = np.array(blank)
+        conn_1_2_array = np.array(blank)
         
-        #     L0
-        # H1, L1
-        # H2, L2
-        # H3, L3
-
-        L2 = ''
-        H3 = ''
-        L3 = ''
-
-        for n2 in self.level[2]:
-            children = self.nodes[n2]['children']
-            for n3 in children:
-                L3 += f'{n3} '
-            L3 += '  ' 
-
-            if len(children) == 2: 
-                H3 += '┌┴┐   '
-                L2 += f' {n2}    '
-            else: 
-                H3 += '┌─┼─┐   '
-                L2 += f'  {n2}     '
-        L3 = L3.strip()
-        
-        L2_idx = np.where(np.array(list(L2)) != ' ')[0]
+        for i, node in enumerate(level[1]):
+            children = nodes[node]['children']
+            m0 = lvl2_string.index(children[0])
+            m1 = lvl2_string.index(children[1])
+            m2 = lvl2_string.index(children[-1])
+            
+            if len(children) == 2:
+                loc = int((m0 + m2)/2)
+                conn_char = '┴'
+            elif len(children) == 3:
+                loc = m1
+                conn_char = '┼'
                 
-        L0 = np.array([' '] * len(L3))
-        H1 = np.array([' '] * len(L3))
-        L1 = np.array([' '] * len(L3))
-        H2 = np.array([' '] * len(L3))
+            lvl1_array[loc] = node           # Place L1 Node
+            if i == 1: lvl0_array[loc] = 'A'  # Place L0 Node
+            
+            # Level 1-2 Connectors   
+            conn_1_2_array[m0:m2] = '─'
+            conn_1_2_array[m0] = '┌'
+            conn_1_2_array[m2] = '┐'
+            conn_1_2_array[loc] = conn_char
+            
+            # Level 0-1 Connectors
+            if i == 0: 
+                conn_0_1_array[loc:] = '─'
+                conn_0_1_array[loc] = '┌'
+            if i == 1:
+                conn_0_1_array[loc] = '┼'
+            if i == 2:
+                conn_0_1_array[loc:] = ' '
+                conn_0_1_array[loc] = '┐'
+            
+        lvl0_string = ''.join(lvl0_array)
+        lvl1_string = ''.join(lvl1_array)
+        conn_0_1 = ''.join(conn_0_1_array)
+        conn_1_2 = ''.join(conn_1_2_array)
         
-        for i, node in enumerate(self.level[1]):
-            n = len(self.nodes[node]['children'])
-            child_locs = L2_idx[:n]
-            L2_idx = L2_idx[n:]
-            m0, m1 = min(child_locs), max(child_locs)
-            
-            # Build H2
-            H2[m0:m1] = '─'; H2[m0] = '┌';  H2[m1] = '┐'
-            j = int((m0 + m1)/2) if n==2 else child_locs[1]
-            conn = '┴' if n==2 else '┼'
-            H2[j] = conn
-            
-            L1[j] = node
-            
-            if i == 0: H1[j] = '┌'; H1[(j+1):] = '─'
-            if i == 1: H1[j] = '┼'; L0[j] = 'A'
-            if i == 2: H1[j] = '┐'; H1[(j+1):] = ' '
-            
-        
-
-        L0, H1, L1, H2 = ''.join(L0), ''.join(H1), ''.join(L1), ''.join(H2)
-        
-        display_str = '\n'.join([L0, H1, L1, H2, L2, H3, L3])
+        display_str = '\n'.join([
+            lvl0_string, conn_0_1, lvl1_string, conn_1_2, lvl2_string, conn_2_3, lvl3_string
+        ])
         display_str = display_str.strip('\n')
         
         display_str_html = '<span style="font-size: 20px; font-family: monospace, monospace; line-height: 20px;">\n'
@@ -322,67 +502,42 @@ class Tree:
         
         #print(L0, H1, L1, H2, L2, H3, L3, sep='\n')
         return display_str, display_str_html
-
-        l1_idx = []           
-        for i, n1 in enumerate(level_1):
-
-            l2_children = nodes[n1]['children']
-            n = len(l2_children)
-            child_indices = bar_indices[:n]
-            print(child_indices)
-            m0 = min(child_indices)
-            m1 = max(child_indices)
-
-            hor_2_list[m0] = '┌'
-            hor_2_list[m1] = '┐'
-            for j in range(m0+1, m1):
-                hor_2_list[j] = '─'
-            if n == 3:
-                j = child_indices[1]
-                hor_2_list[j] = '┼'
-                if i==1: l0_string_list[j] = 'A'
-                l1_string_list[j] = n1
-                hor_1_list[j] = ['┌', '┼', '┐'][i]
-                
-
-            else:
-                j = int((m0 + m1)/2)
-                hor_2_list[j] = '┴'
-                if i==1: l0_string_list[j] = 'A'
-                l1_string_list[j] = n1
-                hor_1_list[j] = ['┌', '┼', '┐'][i]
-
-            bar_indices = bar_indices[n:]
-
-
-        a = hor_1_list.index('┌')
-        b = hor_1_list.index('┐')
-        for i in range(a, b):
-            if hor_1_list[i] == ' ':
-                hor_1_list[i] = '─'
-
-        hor_1 = ''.join(hor_1_list)
-        hor_2 = ''.join(hor_2_list)
-        l0_string = ''.join(l0_string_list)
-        l1_string = ''.join(l1_string_list)
-
-        print(l0_string)
-        print(hor_1)
-        print(l1_string)
-        print(hor_2)
-        print(l2_string)
-        print(hor_3)
-        print(l3_string)
+            
+        
+        
 
 if __name__ == '__main__':#
     print('-'*32)
-    tree = Tree(cond_level=1, seed=452, verbose=True)
+    sd = np.random.choice(range(1000))
+    #sd=268
+    print(sd)
+    tree = Tree(cond_level=100, seed=sd, verbose=True)
     tree_str, tree_html = tree.get_display_str()
     print(tree_str)
     print()
-    print(tree.goals)
+    print('Goals:', tree.goals)
     print()
-    print(tree.cost_df)
+    #print(tree.cost_df)
+    #print()
+    
+    c1 = np.sum(tree.cost_df.cost < 20)
+    c2 = np.sum((tree.cost_df.cost > 20) &(tree.cost_df.cost < 30))
+    c3 = np.sum((tree.cost_df.cost > 30) &(tree.cost_df.cost < 40))
+    c4 = np.sum((tree.cost_df.cost > 40) &(tree.cost_df.cost < 50))
+    c5 = np.sum((tree.cost_df.cost > 50) &(tree.cost_df.cost < 60))
+    c6 = np.sum((tree.cost_df.cost > 60) &(tree.cost_df.cost < 70))
+    c7 = np.sum((tree.cost_df.cost > 70) &(tree.cost_df.cost < 80))
+    c8 = np.sum((tree.cost_df.cost > 80) &(tree.cost_df.cost < 90))
+    c9 = np.sum((tree.cost_df.cost > 90) &(tree.cost_df.cost < 100))
+    
+    print(c1, c2, c3, c4, c5, c6, c7, c8, c9)
+    
+    
+    
+    #for k, v in tree.exp_order.items():
+    #    print(k)
+    #    print(v)
+    #    print()
     
     
 '''
