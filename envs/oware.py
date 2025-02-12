@@ -29,6 +29,9 @@ class Oware:
     
     def copy(self):
         new_state = Oware(is_copy=True)
+        new_state.ppp = self.ppp
+        new_state.spp = self.spp
+        new_state.pits = self.pits
         new_state.board = np.array(self.board)
         new_state.winner = self.winner
         new_state.turns = self.turns
@@ -163,21 +166,34 @@ class Oware:
         else:
             sel = (pits + np.arange(self.ppp)) >= self.ppp
             actions = np.argwhere(sel).reshape(-1,)
-            
-        return actions + start
+        
+        actions = [int(a) + start for a in actions]    
+        
+        return actions
     
     
     def take_action(self, a):
+        #print(f'{self.pits=}')
+        
         new_state = self.copy()
+        #print(f'{new_state.pits=}')
         
         seeds = new_state.board[a]
         new_state.board[a] = 0
         k = new_state.pits - 1
+        
+        # Determine the number of seeds sowed in other pits
         seed_dist = np.ones(k).astype(int) * seeds // k
         seed_dist[:(seeds % k)] += 1
         
         after = seed_dist[:(k-a)]
         before = seed_dist[(k-a):]
+        
+        #print(f'{seeds=}')
+        #print(f'{k=}')
+        #print(f'{seed_dist=}')
+        #print(len(seed_dist))
+        
         
         new_state.board[(a+1):] += after
         new_state.board[:a] += before

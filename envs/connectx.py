@@ -62,12 +62,11 @@ class ConnectX:
         return new_state
 
 
-    def display(self, raw=False, labels=False):
+    def display(self, raw=False, show_labels=True):
         '''
         Player 0 is X
         Player 1 is O
         '''
-        print()
         if raw:
             print('------1--2--3--4--5--6--7----')
             print(self.board[::-1, ])
@@ -76,8 +75,21 @@ class ConnectX:
             c = {-1:'#', 0:'.', 1:'X', 2:'O'}
             b = self.board[1:-1, 1:-1][::-1, :]
             
-            print('  1 2 3 4 5 6 7')
-            print('+---------------+')
+            if self.cols < 10:
+                labels = ' '
+                for n in range(1, self.cols+1):
+                    labels += f' {n}'
+            else:
+                lab1 = ' '
+                lab2 = ' '
+                for n in range(1, self.cols+1):
+                    lab1 += '  ' if n < 10 else f' {str(n)[0]}'
+                    lab2 += f' {n}' if n < 10 else f' {str(n)[1]}'
+                    labels = lab1 + '\n' +  lab2
+                
+            
+            if show_labels: print(labels)
+            print('+' + '-'*(self.cols*2 + 1) + '+')
             
             for i in range(self.rows):
                 print('|', end=' ')
@@ -86,8 +98,8 @@ class ConnectX:
                     if j == self.cols-1:
                         print('|')
                     #    print(6 - i )
-            print('+---------------+\n')
-    
+            print('+' + '-'*(self.cols*2 + 1) + '+')
+        print()
     
     def replay_game(self, delay=1):
         print('Initial State')

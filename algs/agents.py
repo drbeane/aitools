@@ -34,6 +34,9 @@ def play_game(root, agents, display_flags='', max_turns=None,
     
     game_state = root.copy()                   # Create a copy of the game env
     
+    if 's' in display_flags:
+        game_state.display()
+    
     while game_state.winner is None:           # Loop until there is a winner (or a tie)
         
         cp = game_state.cur_player             # Determine current player
@@ -43,11 +46,15 @@ def play_game(root, agents, display_flags='', max_turns=None,
         a = agent.select_action(game_state)    # Agent selects an action. 
         play_time[cp] += time.time() - t0 
         
+        if a == 'quit':
+            print('Exiting game.')
+            return
+        
         game_state = game_state.take_action(a) # Apply the selected action. 
         
         # Report the action taken, if requested. 
         if 'a' in display_flags:
-            print(f'Turn {game_state.turns}: Player {cp} takes Action {a}')
+            print(f'Turn {game_state.turns}: Player {cp} ({agent.name}) takes Action {a}\n')
         
         # Display new game state, if requested. 
         if 's' in display_flags:
@@ -58,8 +65,9 @@ def play_game(root, agents, display_flags='', max_turns=None,
             #if game_state.winner is None:
             #    pass
             if game_state.winner > 0:
-                winner_name = agents_dict[game_state.winner].name
-                print(f'{winner_name} wins!')
+                winner = game_state.winner
+                winner_name = agents_dict[winner].name
+                print(f'Player {winner} ({winner_name}) wins!')
             elif game_state.winner == 0:
                 print('\nThere is a tie!')
         
@@ -148,15 +156,27 @@ def tournament(root, agents, rounds, switch_players=True, reroll=False, random_s
     
     # Display the results of the tournament, if request. 
     if display_results:
-        title = f'{agents[0].name} vs. {agents[1].name}'
+        n0 = agents[0].name
+        n1 = agents[1].name
+        
+        d = abs(len(n0) - len(n1))
+        m = max(len(n0), len(n1))
+        b = max(0, 17 - m)
+        
+        ex_sp0 = b if len(n0) == max([len(n0), len(n1)]) else b+d
+        ex_sp1 = b if len(n1) == max([len(n0), len(n1)]) else b+d
+        t_sp = max(19, m+2)
+        avg_sp = max(0, m-17)
+        
+        title = f'{n0} vs. {n1}'
         print(title)
         print('-' * len(title))
-        print(f'Ties:          {win_counts[0]}')
-        print(f'Player 1 Wins: {win_counts[1]}')
-        print(f'Player 2 Wins: {win_counts[2]}')
-        print(f'Player 1 took: {total_play_time[1]:.2f} seconds')
-        print(f'Player 2 took: {total_play_time[2]:.2f} seconds')
-        print(f'Average number of turns: {turn_count/rounds:.1f}')
+        print(f'Ties: {' '*t_sp}{win_counts[0]}')
+        print(f'{n0} Wins:  {' '*ex_sp0}{win_counts[1]}')
+        print(f'{n1} Wins:  {' '*ex_sp1}{win_counts[2]}')
+        print(f'{n0} took:  {' '*ex_sp0}{total_play_time[1]:.2f} seconds')
+        print(f'{n1} took:  {' '*ex_sp1}{total_play_time[2]:.2f} seconds')
+        print(f'Average number of turns: {' '*avg_sp}{turn_count/rounds:.1f}')
 
     # Reset the numpy random state
     if random_state is not None:
@@ -492,13 +512,17 @@ class HumanPlayer:
             actions = node.get_actions()
             
             if self.show_actions:
-                print('The valid actions are:')
-                print(actions)
+                print('Valid Actions:', actions)
+                print('Enter "quit" to end the game.')
+                print()
                 
             a = input('Please select an action:')
-        
-            try:    
-                if type(actions[0]) == int:
+            print()
+            
+            try:  
+                if a == 'quit':
+                    return a   
+                elif type(actions[0]) == int:
                     a = int(a)
                 elif type(actions[0]) == tuple:
                     a = a.replace('(', '').replace(')', '')
@@ -506,7 +530,7 @@ class HumanPlayer:
             except:
                 print('Action entered was not in correct format.')    
                 continue
-        
+            
             if a not in actions:
                 print('Selected action is not valid.')
                 node.display()

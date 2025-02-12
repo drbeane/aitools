@@ -21,9 +21,12 @@ class Tree:
             soln_list = list(self.solns.values())
             conditions = [
                 self.all_unique, 
-                len(np.unique(soln_list)) == 3, # 6
-                self.solns['gbf'] != self.solns['ast'],   # 8 
-                len(self.exp_order['ast']) > 4
+                len(np.unique(soln_list)) == 3, 
+                self.solns['gbf'] != self.solns['ast'],  
+                len(self.exp_order['ast']) > 4,
+                len(self.exp_order['dfs']) <= 12,
+                len(self.exp_order['ucs']) <= 12,
+                len(self.exp_order['ast']) <= 12,
             ][:cond_level]
             
             if sum(conditions) == len(conditions):
@@ -144,41 +147,52 @@ class Tree:
         #---------------------------------
         # Assign Actual Costs
         #---------------------------------
-        cost_options = list(range(10,85))
-        
-        # Level 0
-        Ac = np.random.choice([c for c in cost_options if c <= 15])
-        cost_df.loc['A', 'cost'] = Ac
-        cost_options.remove(Ac)
-        
-        # Level 1
-        for N in level[1]:
-            option_array = np.array(cost_options)
-            options = option_array[(option_array >= Ac + 5) & (option_array < 35)]
-            c = np.random.choice(options)
-            cost_df.loc[N, 'cost'] = c
-            cost_options.remove(c)
+        while True:
+            cost_options = list(range(5,85))
+            
+            # Level 0
+            #Ac = np.random.choice([c for c in cost_options if c <= 15])
+            cost_df.loc['A', 'cost'] = 0
+            #cost_options.remove(Ac)
+            
+            # Level 1
+            for N in level[1]:
+                option_array = np.array(cost_options)
+                options = option_array[option_array < 35]
+                c = np.random.choice(options)
+                cost_df.loc[N, 'cost'] = c
+                cost_options.remove(c)
 
-        # Level 2
-        for N in level[2]:
-            parent = nodes[N]['parent']
-            par_cost = cost_df.loc[parent, 'cost']
-            option_array = np.array(cost_options)
-            options = option_array[(option_array >= par_cost + 8) & (option_array < 60)]
-            c = np.random.choice(options)
-            cost_df.loc[N, 'cost'] = c
-            cost_options.remove(c)
+            # Level 2
+            for N in level[2]:
+                parent = nodes[N]['parent']
+                par_cost = cost_df.loc[parent, 'cost']
+                option_array = np.array(cost_options)
+                options = option_array[(option_array >= par_cost + 8) & (option_array < 60)]
+                c = np.random.choice(options)
+                cost_df.loc[N, 'cost'] = c
+                cost_options.remove(c)
+            
+            # Level 3
+            for N in level[3]:
+                parent = nodes[N]['parent']
+                par_cost = cost_df.loc[parent, 'cost']
+                option_array = np.array(cost_options)
+                options = option_array[(option_array >= par_cost + 8)]
+                #print(options)
+                c = np.random.choice(options)
+                cost_df.loc[N, 'cost'] = c
+                cost_options.remove(c)
         
-        # Level 3
-        for N in level[3]:
-            parent = nodes[N]['parent']
-            par_cost = cost_df.loc[parent, 'cost']
-            option_array = np.array(cost_options)
-            options = option_array[(option_array >= par_cost + 8)]
-            #print(options)
-            c = np.random.choice(options)
-            cost_df.loc[N, 'cost'] = c
-            cost_options.remove(c)
+            goal_costs = [cost_df.loc[g, 'cost'] for g in self.goals]
+            bfs_cost = cost_df.loc[self.solns['bfs'], 'cost']
+            
+            b1 = bfs_cost != min(goal_costs)
+            c1, c2, c3 = goal_costs
+            b2 = min([abs(c1 - c2), abs(c1 - c3), abs(c2 - c3)]) >= 3
+            if b1 and b2:
+                break
+        
         
         def find_min_soln_cost(node):
             
@@ -509,7 +523,7 @@ class Tree:
 if __name__ == '__main__':#
     print('-'*32)
     sd = np.random.choice(range(1000))
-    #sd=268
+    #sd=115
     print(sd)
     tree = Tree(cond_level=100, seed=sd, verbose=True)
     tree_str, tree_html = tree.get_display_str()
@@ -517,8 +531,13 @@ if __name__ == '__main__':#
     print()
     print('Goals:', tree.goals)
     print()
+    goal_costs = [tree.cost_df.loc[g, 'cost'] for g in tree.goals]
+    print(goal_costs)
     #print(tree.cost_df)
     #print()
+    
+    
+    
     
     c1 = np.sum(tree.cost_df.cost < 20)
     c2 = np.sum((tree.cost_df.cost > 20) &(tree.cost_df.cost < 30))
@@ -531,6 +550,8 @@ if __name__ == '__main__':#
     c9 = np.sum((tree.cost_df.cost > 90) &(tree.cost_df.cost < 100))
     
     print(c1, c2, c3, c4, c5, c6, c7, c8, c9)
+    
+    
     
     
     

@@ -85,6 +85,9 @@ class GeneticAlgorithm:
     def run_evolution(self, num_generations, rr, mr, crossover='uniform', transformation=None,
                       epsilon=1e-6, update_rate=None, show_progress=False, silent=False):
 
+        if update_rate is not None:
+            show_progress = False
+
         self.rr = rr
         self.mr = mr
         self.crossover = crossover
