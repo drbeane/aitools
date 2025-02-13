@@ -171,12 +171,12 @@ def tournament(root, agents, rounds, switch_players=True, reroll=False, random_s
         title = f'{n0} vs. {n1}'
         print(title)
         print('-' * len(title))
-        print(f'Ties: {' '*t_sp}{win_counts[0]}')
-        print(f'{n0} Wins:  {' '*ex_sp0}{win_counts[1]}')
-        print(f'{n1} Wins:  {' '*ex_sp1}{win_counts[2]}')
-        print(f'{n0} took:  {' '*ex_sp0}{total_play_time[1]:.2f} seconds')
-        print(f'{n1} took:  {' '*ex_sp1}{total_play_time[2]:.2f} seconds')
-        print(f'Average number of turns: {' '*avg_sp}{turn_count/rounds:.1f}')
+        print(f'Ties: {" "*t_sp}{win_counts[0]}')
+        print(f'{n0} Wins:  {" "*ex_sp0}{win_counts[1]}')
+        print(f'{n1} Wins:  {" "*ex_sp1}{win_counts[2]}')
+        print(f'{n0} took:  {" "*ex_sp0}{total_play_time[1]:.2f} seconds')
+        print(f'{n1} took:  {" "*ex_sp1}{total_play_time[2]:.2f} seconds')
+        print(f'Average number of turns: {" "*avg_sp}{turn_count/rounds:.1f}')
 
     # Reset the numpy random state
     if random_state is not None:
