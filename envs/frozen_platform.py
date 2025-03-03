@@ -281,11 +281,15 @@ class FrozenPlatform():
         '''
         
         # Determine shading for cells. 
-        if type(fill) == str:
+        if fill is None:
+            x = np.zeros(shape=(self.rows, self.cols))
+            tsnorm = TwoSlopeNorm(vmin=0, vcenter=0.5, vmax=1)
+            cm='binary'
+        if fill == 'slip':
             x = self.slip_prob[1:].reshape(self.rows, self.cols)
             tsnorm = TwoSlopeNorm(vmin=0, vcenter=0.5, vmax=1)
             cm = 'Greens'
-        elif type(fill) == dict:
+        elif type(fill) == dict:    
             x = [fill.get(s,0) for s in range(1, self.num_states)]
             x = np.array(x).reshape(self.rows, self.cols)
             tsnorm = TwoSlopeNorm(vmin=-120, vcenter=0, vmax=120)
@@ -295,9 +299,7 @@ class FrozenPlatform():
             tsnorm = TwoSlopeNorm(vmin=-120, vcenter=0, vmax=120)
             cm = 'RdBu'
         else: 
-            x = np.zeros(shape=(self.rows, self.cols))
-            tsnorm = TwoSlopeNorm(vmin=0, vcenter=0.5, vmax=1)
-            cm='binary'
+            raise Exception('Argument provided for fill parameter is not understood.')
         
         # Calculate Sizes of various elements
         base = 3
@@ -387,7 +389,7 @@ class FrozenPlatform():
             if policy is None:                      # No policy specified
                 actions = self.get_actions()
                 a = np.random.choice(actions)
-            elif epsilon is None:                   # Policy given, no exploration
+            elif epsilon is None or epsilon == 0:   # Policy given, no exploration
                 a = policy[node.state]
             else:                                   # Policy given, exploration
                 roll = np.random.uniform(0,1)
@@ -414,6 +416,21 @@ class FrozenPlatform():
 
 if __name__ == '__main__':
     
-    fp = FrozenPlatform(10, 10, [0.1, 0.4], start=22, holes=3)
-    ep = fp.generate_episode()
-    print(ep.rewards)
+    fp = FrozenPlatform(4, 4, [0, 0.8], start=1, holes=[8, 13], random_state=391)
+    pi1 = {0:0, 1:2, 2:2, 3:2, 4:3, 5:1, 6:1, 7:2, 8:0, 9:0, 10:1, 11:2, 12:2, 13:0, 14:1, 15:1, 16:0}
+    
+    N = 10000
+    goals1 = 0
+    goals2 = 0
+
+    np.random.seed(1)
+    for i in range(N):
+        ep1 = fp.generate_episode(policy=pi1, epsilon=0)
+
+        if ep1.state == ep1.goal:
+            goals1 += 1
+
+
+    sr1 = goals1 / N
+
+    print(f"Under policy 1, the agent's success rate was {sr1:.4f}.")
