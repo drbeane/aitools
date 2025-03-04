@@ -285,7 +285,7 @@ class FrozenPlatform():
             x = np.zeros(shape=(self.rows, self.cols))
             tsnorm = TwoSlopeNorm(vmin=0, vcenter=0.5, vmax=1)
             cm='binary'
-        if fill == 'slip':
+        elif fill == 'slip':
             x = self.slip_prob[1:].reshape(self.rows, self.cols)
             tsnorm = TwoSlopeNorm(vmin=0, vcenter=0.5, vmax=1)
             cm = 'Greens'
@@ -418,19 +418,5 @@ if __name__ == '__main__':
     
     fp = FrozenPlatform(4, 4, [0, 0.8], start=1, holes=[8, 13], random_state=391)
     pi1 = {0:0, 1:2, 2:2, 3:2, 4:3, 5:1, 6:1, 7:2, 8:0, 9:0, 10:1, 11:2, 12:2, 13:0, 14:1, 15:1, 16:0}
-    
-    N = 10000
-    goals1 = 0
-    goals2 = 0
 
-    np.random.seed(1)
-    for i in range(N):
-        ep1 = fp.generate_episode(policy=pi1, epsilon=0)
-
-        if ep1.state == ep1.goal:
-            goals1 += 1
-
-
-    sr1 = goals1 / N
-
-    print(f"Under policy 1, the agent's success rate was {sr1:.4f}.")
+    fp.display()
