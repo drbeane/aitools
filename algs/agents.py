@@ -38,23 +38,28 @@ def play_game(root, agents, display_flags='', max_turns=None,
         game_state.display()
     
     while game_state.winner is None:           # Loop until there is a winner (or a tie)
-        
+        print('------ STARTING LOOP')
+        print(f'1. {game_state.turns=}')
         cp = game_state.cur_player             # Determine current player
+        print(f'2. {game_state.turns=}')
         agent = agents_dict[cp]                # Lookup agent for current player
         
-        t0 = time.time()                    
+        t0 = time.time()                
+        print(f'3. {game_state.turns=}')    
         a = agent.select_action(game_state)    # Agent selects an action. 
         play_time[cp] += time.time() - t0 
+        print(f'4. {game_state.turns=}')    
         
         if a == 'quit':
             print('Exiting game.')
             return
-        
+        print(f'{game_state.turns=}')
+        print(f'{a=}')
         game_state = game_state.take_action(a) # Apply the selected action. 
         
         # Report the action taken, if requested. 
         if 'a' in display_flags:
-            print(f'Turn {game_state.turns}: Player {cp} ({agent.name}) takes Action {a}\n')
+            print(f'Turn {game_state.turns}: Player {cp} ({agent.name}) takes Action {a}')
         
         # Display new game state, if requested. 
         if 's' in display_flags:
